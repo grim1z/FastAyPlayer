@@ -90,7 +90,6 @@ ReLoadDecrunchSavedState equ $ + 1
         ld	sp, DecrunchSavedState
         pop	de      ; d = restart if not null       e = ???
         pop	hl      ; Current position in decrunch buffer
-        pop	af      ; TODO:  remove pop AF and corresponding PUSH BC. The old A value is stored in E. Adjust Saved state size
         ld	(ReLoadDecrunchSavedState), sp
 
         ; SP = current position in decrunch source buffer
@@ -107,6 +106,8 @@ ReLoadDecrunchSavedState equ $ + 1
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+        ld	a, h
+        res	7, h
         ld	sp, hl          ; Load current position in decrunch buffer
 CurrentDecrunchBuffer equ $ + 1
 CurrentDecrunchBufferLow equ $ + 1
@@ -188,7 +189,7 @@ RestartCopySubStringFromDict:
         _CopyFromDictLoop	c                             ; 12 * N NOPS
         
         ld	d, b
-        ld	b, RESTART_COPY_FROM_DICT_MARKER
+        ld	h, #00
         jp	DecrunchFinalize
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -202,8 +203,8 @@ RestartCopySubStringFromDict:
 RestartPausedDecrunch:
         nop
         inc	ly
-        or	a
-        jp	nz, RestartCopyLiteral
+        rla
+        jp	c, RestartCopyLiteral
         
         ds      14
 
@@ -257,7 +258,7 @@ CopySubLiteralChain:
         ld	d, a                    ; TODO: remplacer par _AdjustCopySizeWithRemainingSlots et mettre ld d, b plus bas comme en fin de copy from dict.
         _CopyLiteralLoop        c
 
-        ld	b, RESTART_COPY_LITERAL_MARKER
+        ld	h, #80
         ds      3
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -269,11 +270,10 @@ CopySubLiteralChain:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 DecrunchFinalize:
-        ld	hl, #0000
+        ld	l, #00
         add	hl, sp
 
         ld	sp, (ReLoadDecrunchSavedState)
-        push	bc
         push	hl
         push	de
 DecrunchFinalCode:
@@ -551,8 +551,6 @@ InitDecrunchStateLoop:
         inc	de
         ldi                     ; Copy register crunched data address
         ldi
-        inc	de
-        inc	de
         djnz	InitDecrunchStateLoop
 
         ;
@@ -664,9 +662,9 @@ ConstantRegisters:              ; Init data
 
 ; TODO: Réutiliser l'espace du header de format auquel on ajoute un peu d'espace pour compléter.
 DecrunchSavedState:
-        ds      6
+        ds      4
 DecrunchSavedStateReg1:
-        ds	66
+        ds	44
 
 CodeBackup:                   ; Init data
         ds	3
