@@ -168,10 +168,11 @@ RestartCopyFromDict:
         
 DoFramesLoop:
         ld	a, h
+        ld	b, l
         pop	hl
         ld	sp, hl
         ld	h, a
-        ld	l, #00
+        ld	l, b
 
         ds	14
         
@@ -458,23 +459,6 @@ ReturnFromSkipBufferReset:
         ld	(CurrentDecrunchBuffer), hl
 
         ;
-        ; Decrease the frame counter and handle counter reset.
-        ;
-FrameCounter equ $ + 1
-        ld	hl, #0000
-        dec	hl
-        ld	a, h
-        or	l
-        jr	nz, SkipFrameCounterReset
-        
-FrameCounterReset  equ	$ + 1
-        ld	hl, #0000
-        ld	(CurrentDecrunchBufferLow), a
-
-ReturnFromSkipFrameCounterReset:
-        ld	(FrameCounter), hl
-
-        ;
         ; Return to the calling code.
         ;
 ReturnAddress = $+1
@@ -498,13 +482,6 @@ SkipBufferReset:
         inc	h
         jr	ReturnFromSkipBufferReset
 
-        ;
-        ; Wait loop for constant time if there is no need to reset the frame counter
-        ;
-SkipFrameCounterReset:
-        ds      3
-        jr      ReturnFromSkipFrameCounterReset
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                                               ;;
@@ -524,8 +501,8 @@ PlayerInit:
         inc	hl
         ld	d, (hl)
         inc	hl
-        ld	(FrameCounter), de      ; Write number of frames
-        ld	(FrameCounterReset), de ;
+;        ld	(FrameCounter), de      ; Write number of frames        - TODO: Supprimer le frame counter du fichier ?????
+;        ld	(FrameCounterReset), de ;
         ex	de, hl
         ld	a, (de)         ; Read number of constant registers
         inc	de
