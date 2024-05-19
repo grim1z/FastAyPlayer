@@ -317,8 +317,8 @@ MEND
 WriteToPSG:
         ld	hl, (CurrentDecrunchBuffer)
         ld	h, DECRUNCH_BUFFER_ADDR_HIGH
-        ld	b, #f4
-        ld	e, #02
+        ld	bc, #f406
+        ld	de, #0102
         exx
         ld	b, #f6
         ld	hl, #c080
@@ -343,13 +343,12 @@ WriteToPSG:
         ; Write to register 1
         ;
         ld	a, (hl)
-        dec	e
-        WriteToPSGReg	e
+        WriteToPSGReg	d
 
         ;
         ; Write to register 3
         ;
-        ld	e, #03
+        inc     e
         rra
         rra
         rra
@@ -370,40 +369,39 @@ WriteToPSG:
         ;
         ld	a, (hl)
         inc	h
-        ld	e, #06
-        WriteToPSGReg	e
+        WriteToPSGReg	c
 
         ;
         ; Write to register 8
         ;
-        ld	e, #08
+        ld	d, #08
         ld	a, (hl)
         inc	h
-        WriteToPSGReg	e
+        WriteToPSGReg	d
 
         ;
         ; Write to register 9
         ;
-        inc	e
+        inc	d
         ld	a, (hl)
         inc	h
-        WriteToPSGReg	e
+        WriteToPSGReg	d
 
         ;
         ; Write to register 10
         ;
-        inc	e
+        inc	d
         ld	a, (hl)
         inc	h
-        WriteToPSGReg	e
+        WriteToPSGReg	d
         
         ;
         ; Write to register 11
         ;
-        inc	e
+        inc	d
         ld	a, (hl)
         inc	h
-        WriteToPSGReg	e
+        WriteToPSGReg	d
 
 if      SKIP_R12!=1
         ;
@@ -411,15 +409,15 @@ if      SKIP_R12!=1
         ;
         ld	a, (hl)
         inc	h
-        inc	e
-        WriteToPSGReg	e
+        inc	d
+        WriteToPSGReg	d
 endif
 
         ;
         ; Write to register 5
         ;
         ld	a, (hl)
-        ld	e, #05
+        inc     e
         WriteToPSGReg	e
 
         ;
@@ -428,20 +426,20 @@ endif
         inc	h
         bit	7, (hl)                 ; Test "Continue" bit. If set, do not write to register 13.
         jr	nz, SkipRegister13
-        ld	e, #0d
+        inc     d
         rra
         rra
         rra
         rra
-        WriteToPSGReg	e
+        WriteToPSGReg	d
 
 ReturnFromSkipRegister13:
         ;
         ; Write to register 7
         ;
         ld	a, (hl)
-        ld	e, #07
-        WriteToPSGReg	e
+        inc     c
+        WriteToPSGReg	c
 
         ld	hl, (CurrentDecrunchBuffer)
         inc	l
@@ -485,7 +483,7 @@ SkipRegister13:
         ld	a, #06        
 WaitLoop
         dec	a
-        jp	nz, WaitLoop
+        jr	nz, WaitLoop
         jr	ReturnFromSkipRegister13
 
         ;
