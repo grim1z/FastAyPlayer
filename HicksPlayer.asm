@@ -457,25 +457,26 @@ ReturnFromSkipRegister13:
 ReturnFromSkipBufferReset:
         ld	(CurrentDecrunchBuffer), hl
 
+        ;
+        ; Decrease the frame counter and handle counter reset.
+        ;
 FrameCounter equ $ + 1
         ld	hl, #0000
         dec	hl
         ld	a, h
         or	l
-        jr	z, ResetFrameCounter
-
-        ds	6
-
-        jr	SkipFrameCounterReset
+        jr	nz, SkipFrameCounterReset
         
-ResetFrameCounter:
 FrameCounterReset  equ	$ + 1
         ld	hl, #0000
-        xor	a
         ld	(CurrentDecrunchBufferLow), a
 
-SkipFrameCounterReset:
+ReturnFromSkipFrameCounterReset:
         ld	(FrameCounter), hl
+
+        ;
+        ; Return to the calling code.
+        ;
 ReturnAddress = $+1
         jp	#0000
 
@@ -496,6 +497,13 @@ SkipBufferReset:
         ds	6
         inc	h
         jr	ReturnFromSkipBufferReset
+
+        ;
+        ; Wait loop for constant time if there is no need to reset the frame counter
+        ;
+SkipFrameCounterReset:
+        ds      3
+        jr      ReturnFromSkipFrameCounterReset
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
