@@ -270,9 +270,8 @@ CopySubLiteralChain:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 DecrunchFinalize:
-        ld	(l40d4), sp            ; TODO: remplacer par LD HL, 0000; ADD HL, SP
-l40d4 equ $ + 1
         ld	hl, #0000
+        add	hl, sp
 
         ld	sp, (ReLoadDecrunchSavedState)
         push	bc
