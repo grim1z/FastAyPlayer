@@ -33,7 +33,6 @@ MEND
 
       ; * Exe player *               
       MACRO	exe_play
-            ld	ix, $+7
             jp	adr_play + 3          
       MEND
 

@@ -475,7 +475,8 @@ FrameCounterReset  equ	$ + 1
 
 SkipFrameCounterReset:
         ld	(FrameCounter), hl
-        jp	(ix)        
+ReturnAddress = $+1
+        jp	#0000
 
         ;
         ; Wait loop for constant time when register 13 is ignored.
@@ -507,6 +508,8 @@ SkipBufferReset:
         ;       HL: Music data
 
 PlayerInit:
+        ld	(ReturnAddress), ix
+
         ld	e, (hl)         ; Read number of frames.
         inc	hl
         ld	d, (hl)
