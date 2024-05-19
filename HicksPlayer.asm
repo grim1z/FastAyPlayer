@@ -133,7 +133,7 @@ FetchNewCrunchMarker:
         ; TODO: changer l'ordre des jump pour aller en priorité sur "CopyFromDict"
 
         jr	z, DoFramesLoop    ; A = 1F --> Reset source buffer for frame loop
-        jp	c, CopyLiteral          ; A < 1F --> Copy literals
+        jr	c, CopyLiteral          ; A < 1F --> Copy literals
                                         ; A > 1F --> Copy from dictionnary
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -174,7 +174,7 @@ DoFramesLoop:
         ld	h, a
         ld	l, b
 
-        ds	14
+        ds	13
         
         jr	FetchNewCrunchMarker
 
@@ -207,7 +207,7 @@ RestartPausedDecrunch:
         rla
         jp	c, RestartCopyLiteral
         
-        ds      14
+        ds      13
 
         ld	a, d
         cp	c
@@ -239,7 +239,7 @@ RestartCopyLiteral:
 CopyLiteral:
         inc	a
 SkipInc:
-        ds      12
+        ds      11
 
         cp	c
         jp	nc, CopySubLiteralChain
@@ -283,7 +283,7 @@ DecrunchFinalCode:
 StabilizeLoop:
         jr	z, WriteToPSG
 
-        ds      32
+        ds      31
 
         dec	a
         jr	StabilizeLoop           ; TODO: jr nz,SabiliteLoop (skip jr z, WriteToPSG) ---> Gagne 1 NOP sur la sortie.
