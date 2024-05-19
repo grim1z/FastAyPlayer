@@ -118,7 +118,7 @@ NrDataToDecrunch:  equ	$ + 1
         ld	ly, #00
         inc	d
         dec	d
-        jp	nz, RestartPausedDecrunch        ;;; TODO JP ----> JR (check other JP !!!!! ATTENTION, temps different entre pris et non pris)
+        jr	nz, RestartPausedDecrunch
 
         ;
         ; Load a new marker
@@ -200,7 +200,6 @@ RestartCopySubStringFromDict:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 RestartPausedDecrunch:
-        nop
         nop
         inc	ly
         or	a
