@@ -441,13 +441,16 @@ ReturnFromSkipRegister13:
         inc     c
         WriteToPSGReg	c
 
+        ;
+        ; Move to the next decrunch buffer and handle buffer loop.
+        ;
         ld	hl, (CurrentDecrunchBuffer)
         inc	l
-        inc	h
         ld	a, h
-        cp	DECRUNCH_BUFFER_ADDR_HIGH + NR_REGISTERS_TO_DECRUNCH
+        cp	DECRUNCH_BUFFER_ADDR_HIGH + NR_REGISTERS_TO_DECRUNCH - 1
         jr	nz, SkipBufferReset
 
+        ; Loop back to the first decrunch buffer.
         ld	bc, DecrunchSavedState
         ld	(ReLoadDecrunchSavedState), bc
         ld	h, DECRUNCH_BUFFER_ADDR_HIGH
@@ -490,7 +493,8 @@ WaitLoop
         ; Wait loop for constant time if there is no need to reset decrunch buffers
         ;
 SkipBufferReset:
-        ds      7
+        ds	6
+        inc	h
         jr	ReturnFromSkipBufferReset
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
