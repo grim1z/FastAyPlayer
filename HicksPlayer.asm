@@ -37,13 +37,11 @@ MEND
 ;
 ; Compute the source address of data in the dictionary
 ;
-MACRO   _ComputeCopyFromDictSourceAddr   ; 10 NOPS
+MACRO   _ComputeCopyFromDictSourceAddr   ; 8 NOPS
         dec	sp
         pop	af
-        inc	a
-        ld	e, a
-        ld	a, l
-        sub e
+        sub	l
+        cpl
         ld	e, a
 MEND
 
@@ -149,7 +147,7 @@ FetchNewCrunchMarker:
 
 
         _UpdateNrCopySlot	(void)                  ; 4 NOPS
-        _ComputeCopyFromDictSourceAddr	(void)          ; 10 (+1) NOPS
+        _ComputeCopyFromDictSourceAddr	(void)          ; 8 (+1) NOPS
 RestartCopyFromDict:
         ld	d, h
 
@@ -173,7 +171,7 @@ DoFramesLoop:
         ld	h, a
         ld	l, b
 
-        ds	12
+        ds	10
         
         jr	FetchNewCrunchMarker
 
@@ -182,7 +180,7 @@ DoFramesLoop:
         ;
 CopySubStringFromDict:
         _AdjustCopySizeWithRemainingSlots	(void)        ; 2 NOPS
-        _ComputeCopyFromDictSourceAddr	(void)                ; 10 (+1) NOPS
+        _ComputeCopyFromDictSourceAddr	(void)                ; 8 (+1) NOPS
 
 RestartCopySubStringFromDict:
         ld	d, h                           ; TODO: copier LD D, H dans restart decrunch et l'intégrer dans _ComputeCopyFromDictSourceAddr pour plus de clareté.
@@ -206,7 +204,7 @@ RestartPausedDecrunch:
         rla
         jp	c, RestartCopyLiteral
         
-        ds      13
+        ds      11
 
         ld	a, d
         cp	c
@@ -239,13 +237,12 @@ CopyLiteral:
         inc	a
 SkipInc:
 
-        nop
         ex	de, hl
         ld	hl, #0000
         add	hl, sp
 
         cp	c
-        jp	nc, CopySubLiteralChain
+        jr	nc, CopySubLiteralChain
 
         _UpdateNrCopySlot	(void)          ; 4 NOPS
         _CopyLiteralLoop        b
@@ -268,7 +265,7 @@ CopySubLiteralChain:
         ex	de, hl
 
         ld	d, b
-        ds      3
+        ds      2
 
         ld	h, #80
 
@@ -294,7 +291,7 @@ DecrunchFinalCode:
 StabilizeLoop:
         jr	z, WriteToPSG
 
-        ds      30
+        ds      28
 
         dec	a
         jr	StabilizeLoop           ; TODO: jr nz,SabiliteLoop (skip jr z, WriteToPSG) ---> Gagne 1 NOP sur la sortie.
