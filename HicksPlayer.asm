@@ -50,13 +50,12 @@ MEND
 ;
 ; Copy string from dictionary
 ;
-MACRO   _CopyFromDictLoop	LoopReg ; 12 * N NOPS
+MACRO   _CopyFromDictLoop	LoopReg ; 11 * N NOPS
 @CopyLoop:
         ld	a, (de)     
         ld	(hl), a
         inc	l
         inc	e
-        nop
         nop
         dec	{LoopReg}
         jp	nz, @CopyLoop
@@ -65,12 +64,12 @@ MEND
 ;
 ; Copy literals from crunched data.
 ;
-MACRO   _CopyLiteralLoop	LoopReg ; 12 * N NOPS
+MACRO   _CopyLiteralLoop	LoopReg ; 11 * N NOPS
 @CopyLoop:
-        dec	sp
-        pop	af
-        ld	(hl), a         ; TODO: POP DE (ou BC) puis LD(HL), D; LD(HL), E
-        inc	l
+        ld	a, (hl)     
+        ld	(de), a
+        inc	hl
+        inc	e
         dec	{LoopReg}
         jp	nz, @CopyLoop
 MEND
@@ -239,7 +238,11 @@ RestartCopyLiteral:
 CopyLiteral:
         inc	a
 SkipInc:
-        ds      11
+
+        nop
+        ex	de, hl
+        ld	hl, #0000
+        add	hl, sp
 
         cp	c
         jp	nc, CopySubLiteralChain
@@ -247,20 +250,28 @@ SkipInc:
         _UpdateNrCopySlot	(void)          ; 4 NOPS
         _CopyLiteralLoop        b
 
+        ld	sp, hl
+        ex	de, hl
+
         jp	FetchNewCrunchMarker
+
 
         ;
         ; We have more literal to copy than available copy slots
         ;
 CopySubLiteralChain:
-        nop                             ; TODO: déplacer le nop dans le "ds 3" ci-dessous
 
-        sub	c
-        ld	d, a                    ; TODO: remplacer par _AdjustCopySizeWithRemainingSlots et mettre ld d, b plus bas comme en fin de copy from dict.
-        _CopyLiteralLoop        c
+        _AdjustCopySizeWithRemainingSlots       (void)
+        _CopyLiteralLoop	c
+
+        ld	sp, hl
+        ex	de, hl
+
+        ld	d, b
+        ds      3
 
         ld	h, #80
-        ds      3
+
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
