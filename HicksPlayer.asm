@@ -58,7 +58,7 @@ MACRO   _CopyFromDictLoop	LoopReg ; 11 * N NOPS
         inc	e
         nop
         dec	{LoopReg}
-        jp	nz, @CopyLoop
+        jr	nz, @CopyLoop
 MEND
 
 ;
@@ -71,7 +71,7 @@ MACRO   _CopyLiteralLoop	LoopReg ; 11 * N NOPS
         inc	hl
         inc	e
         dec	{LoopReg}
-        jp	nz, @CopyLoop
+        jr	nz, @CopyLoop
 MEND
 
         jp	PlayerInit
@@ -173,7 +173,7 @@ DoFramesLoop:
         ld	h, a
         ld	l, b
 
-        ds	13
+        ds	12
         
         jr	FetchNewCrunchMarker
 
@@ -294,7 +294,7 @@ DecrunchFinalCode:
 StabilizeLoop:
         jr	z, WriteToPSG
 
-        ds      31
+        ds      30
 
         dec	a
         jr	StabilizeLoop           ; TODO: jr nz,SabiliteLoop (skip jr z, WriteToPSG) ---> Gagne 1 NOP sur la sortie.
