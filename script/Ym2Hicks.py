@@ -219,7 +219,7 @@ class LzssCompressor:
 	#
 	# Encode a match into the crunch Buffer
 	#
-	def EncodeMatch(self, Buffer, Distance, Length):
+	def EncodeMatch(self, Buffer, Distance, Length):	
 		# Write copy Length
 		CopyLen = Length + 0x1D
 		Buffer = Buffer + CopyLen.to_bytes(1, "little")
@@ -232,29 +232,84 @@ class LzssCompressor:
 	# Copy Literal: Save NLit-1 + Lit
 	# Copy from Buffer: Save BufSize +1D + (Offset - 1)
 	#      --> Min Buffer size = 3	
-	def compress(self, Data):
+	def compress(self, Data, LoopStart):
 		i = 0
 		Literal=b''
-		Crunch=b''	
+		Crunch=b''
+		if LoopStart:
+			PrevLen1 = PrevLen2 = 1
+		else:
+			PrevLen1 = PrevLen2 = -1
+
 		while i < len(Data):
 			Match = self.FindLongestMatch(Data, i)
+
+			if Match:
+				#
+				# This is a pure heuristic optimization which limits the bad impact of the "4 tokens constaint"
+				#
+				MatchDistance, MatchLength = Match
+				if Literal and len(Literal) + MatchLength < 6:
+					Match = False
+				elif PrevLen2 + MatchLength < 6:
+					Match = False
+
+			if Match:
+				#
+				# Here is the "4 tokens constaint": we make sure that we can always decrunch enough bytes with 4 tokens.
+				# We assume the worth case scenario where the 1st token is a decrunch restart producing only 1 byte.
+				MatchDistance, MatchLength = Match
+				Remain = len(Data) - i - MatchLength
+
+				if Literal and (PrevLen2 >= 0) and (1 + PrevLen2 + len(Literal) + MatchLength < self.SlotLength):
+					Match = False
+				if Literal and (PrevLen1 >= 0) and (1 + PrevLen1 + PrevLen2 + len(Literal) < self.SlotLength):
+					Match = False
+				if not Literal and (PrevLen1 >= 0) and (1 + PrevLen1 + PrevLen2 + MatchLength < self.SlotLength):
+					Match = False
+
+				# Special case for ending bytes
+				# We can face an even worth case scenario:
+				#   Token 1: Decrunch restart producing 1 byte
+				#   Token 4: A frame loop producing 1 byte
+				# Scenario #2
+				#   Token 1: Decrunch restart producing 1 byte
+				#   Token 3: A frame loop producing 1 byte
+				if Match and Remain != 0 and Remain < self.SlotLength - 2:
+					MissingBytes = self.SlotLength - 2 - Remain
+					MatchLength = MatchLength - MissingBytes
+					if (MatchLength < 3):
+						Match = False
+					else:
+						Match = MatchDistance, MatchLength
+
 			if Match:
 				MatchDistance, MatchLength = Match
 				if Literal:
+					PrevLen1 = PrevLen2
+					PrevLen2 = len(Literal)
 					Crunch = self.EncodeLiteral(Crunch, Literal)
 					Literal = b''
 
 				Crunch = self.EncodeMatch(Crunch, MatchDistance, MatchLength)
+
+				PrevLen1 = PrevLen2
+				PrevLen2 = MatchLength
+
 				i += MatchLength
 			else:
 				Literal = Literal + Data[i:i+1]
 				if len(Literal) == self.LitMaxSize:
 					Crunch = self.EncodeLiteral(Crunch, Literal)
 					Literal = b''
+					PrevLen1 = -1
+					PrevLen2 = -1
 				i += 1
 
 		if Literal:
 			Crunch = self.EncodeLiteral(Crunch, Literal)
+			PrevLen1 = PrevLen2
+			PrevLen2 = len(Literal)
 
 		return Crunch
 
@@ -294,19 +349,6 @@ class HicksConvertor:
 			ToneOff = (Mixer[i] & VoiceToneMask) == VoiceToneMask
 			NoiseOff = (Mixer[i] & VoiceNoiseMask) == VoiceNoiseMask
 
-#			if CurVol == 0:
-#				Mode = 0
-#				Tone = 0
-#				Noise = 0
-#				if VolMode != 0:
-#					Mode = 1
-#				if not ToneOff:
-#					Tone = 1
-#				if not NoiseOff:
-#					Noise = 1
-#				if i < 100:
-#					print (f"{Voice}: {i} - Vol {Mode}.{CurVol:02x} - Mix N:{Noise} T:{Tone}")
-
 			# Smooth Frequency if volume is 0 or tone if off.
 			if Volume[i] == 0 or ToneOff:
 				if FreqLow[i] != FreqLow[i-1]:
@@ -314,11 +356,10 @@ class HicksConvertor:
 				if FreqHigh[i] != FreqHigh[i-1]:
 					FreqHigh[i] = FreqHigh[i-1]
 
-#			# Smooth volume if tone is off
-#			# In this case, volume is not used by the PSG.
+			# Smooth volume if tone is off
+			# In this case, volume is not used by the PSG.
 			if ToneOff and Volume[i] != Volume[i-1]:
 				Volume[i] = VolMode | PrevVol			# V4 optimization
-
 
 	#
 	# Smooth noise register when noise is off on every channels
@@ -372,7 +413,9 @@ class HicksConvertor:
 #			if Constant:
 #				print(f"Register {r} is constant ({hex(self.YmFile.Registers[r][0])})")
 
-		for r in range(len(self.RegOrder)):
+		NrRegisters = len(self.RegOrder)
+		self.Compressor.SlotLength = NrRegisters
+		for r in range(NrRegisters):
 			if self.RegOrder[r] == 1:
 				print(f"  - Crunch register 1+3: ", end='', flush=True)
 			elif self.RegOrder[r] == 5:
@@ -380,13 +423,16 @@ class HicksConvertor:
 			else:
 				print(f"  - Crunch register {self.RegOrder[r]}: ", end='', flush=True)
 			if self.YmFile.LoopFrame != 0:
-				self.R[r] = self.Compressor.compress(self.YmFile.Registers[self.RegOrder[r]][0:self.YmFile.LoopFrame])
+				RegisterData = self.YmFile.Registers[self.RegOrder[r]][0:self.YmFile.LoopFrame]
+				self.R[r] = self.Compressor.compress(RegisterData, False)
 				self.RLoop[r] = len(self.R[r])
 
-				self.R[r] = self.R[r] + self.Compressor.compress(self.YmFile.Registers[self.RegOrder[r]][self.YmFile.LoopFrame:])
+				RegisterData = self.YmFile.Registers[self.RegOrder[r]][self.YmFile.LoopFrame:-1]
+				self.R[r] = self.R[r] + self.Compressor.compress(RegisterData, True)
 
 			else:
-				self.R[r] = self.Compressor.compress(self.YmFile.Registers[self.RegOrder[r]])
+				RegisterData = self.YmFile.Registers[self.RegOrder[r]][0:-1]
+				self.R[r] = self.Compressor.compress(RegisterData, True)
 				self.RLoop[r] = 0
 			print(f"{len(self.YmFile.Registers[self.RegOrder[r]])} -> {len(self.R[r])}")
 
@@ -403,12 +449,14 @@ class HicksConvertor:
 			BufferAddr[0] = StartAddr + 3 + 2 * len(self.RegOrder)
 			for i in range(len(self.RegOrder)):
 				fd.write(BufferAddr[i].to_bytes(2,"little"))
-				BufferAddr[i+1] = BufferAddr[i] + len(self.R[i]) + 3
+				BufferAddr[i+1] = BufferAddr[i] + len(self.R[i]) + 4
 			
 			LoopMarker=0x1F
 			for i in range(len(self.RegOrder)):
+				RegisterData = self.YmFile.Registers[self.RegOrder[i]]
 				fd.write(self.R[i])
 				fd.write(LoopMarker.to_bytes(1,"little"))
+				fd.write(RegisterData[-1].to_bytes(1,"little"))
 				fd.write((BufferAddr[i]+self.RLoop[i]).to_bytes(2,"little"))
 
 				
@@ -428,7 +476,7 @@ if __name__ == "__main__":
 
 		Convertor = HicksConvertor(sys.argv[2])
 		Convertor.Convert(Song)
-		Convertor.Write(0x5000)
-		
+		Convertor.Write(0x3800)
+
 #	except Exception as ErrorMsg:
 #		sys.exit(f"Error: {ErrorMsg}")

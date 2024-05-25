@@ -10,9 +10,9 @@
       ORG	#A000      
       RUN	$
 
-      adr_play	equ #4000        ; code player (<&400)
-      buf_ayc	equ #7000        ; buffers decrunch (&e00 max)
-      adr_ayc	equ #5000
+      adr_play	equ #3000        ; code player (<&400)
+      buf_ayc	equ #C000        ; buffers decrunch (&e00 max)
+      adr_ayc	equ #3800
 
       _HicksPlayer	= 1
 
@@ -129,15 +129,22 @@ if    _HicksPlayer
       include     "HicksPlayer.asm"
       print	"Player size:", $-adr_play
 
+;      org	adr_ayc: incbin "results/v5/Short-Loop0.ayc"
+;      org	adr_ayc: incbin "results/v5/Solarium.ayc"                         ; 0:51
+;      org	adr_ayc: incbin "results/v5/From_Scratch-Part1.ayc"               ; 1:08
+;      org	adr_ayc: incbin "results/v5/Boblines.ayc"                         ; 1:17
+;	org	adr_ayc: incbin "results/v5/Hocus_Pocus.ayc"                      ; 2:21
+;      org	adr_ayc: incbin "results/v5/cybernoid.ayc"                        ; 2:21
+;      org	adr_ayc: incbin "results/v5/Fractal.ayc"                          ; 3:33
+;      org	adr_ayc: incbin "results/v5/Orion_Prime-Introduction.ayc"         ; 3:47
+;      org	adr_ayc: incbin "results/v5/Midline_Process-Carpet.ayc"           ; 5:22
+      org	adr_ayc: incbin "results/v5/Sudoku_Theme1.ayc"                    ; 7:17
+;      org	adr_ayc: incbin "results/v5/Renegade.ayc"                         ; 9:38
+
+
 ;      org	adr_ayc: incbin "resources/Cybernoid.ayc"
-      org	adr_ayc: incbin "results/v4/Short-Loop0.ayc"
-;     org	adr_ayc: incbin "results/v4/From_Scratch-Part1.ayc"
-;	org	adr_ayc: incbin "results/v6/Hocus_Pocus.ayc"
-;      org	adr_ayc: incbin "results/v4/Midline_Process-Carpet.ayc"
-;      org	adr_ayc: incbin "results/v1/Orion_Prime-Introduction.ayc"
-;      org	adr_ayc: incbin "results/v1/Sudoku_Theme1.ayc"
-;      org	adr_ayc: incbin "results/v1/cybernoid.ayc"
 ;     org	adr_ayc: incbin "resources/hicks-ayc/Hocus-Hicks.ayc"
+
       print	"Data size:", $-adr_ayc
 
       save    "player.bin", #4000, #4200, DSK, 'Hicks.dsk'

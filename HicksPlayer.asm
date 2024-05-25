@@ -1,6 +1,6 @@
-org #4000
+org #3000
 
-        DECRUNCH_BUFFER_ADDR_HIGH	equ #70
+        DECRUNCH_BUFFER_ADDR_HIGH	equ #C0
         NR_REGISTERS_TO_DECRUNCH        equ #0C
 
         RESTART_COPY_FROM_DICT_MARKER   equ     0
@@ -164,15 +164,19 @@ RestartCopyFromDict:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         
 DoFramesLoop:
-        ld	a, h
-        ld	b, l
+        dec	sp
+        pop	af
+        ld	(hl), a
+        inc     l
+
+        exx
         pop	hl
         ld	sp, hl
-        ld	h, a
-        ld	l, b
-
-        ds	10
-        
+        exx
+        ds      11
+        dec	c
+        ld	d, c
+        jr	z, PreDecrunchFinalize
         jr	FetchNewCrunchMarker
 
         ;
@@ -265,8 +269,10 @@ CopySubLiteralChain:
         ex	de, hl
 
         ld	d, b
-        ds      2
 
+        nop
+PreDecrunchFinalize:
+        nop
         ld	h, #80
 
 
@@ -286,7 +292,7 @@ DecrunchFinalize:
         push	hl
         push	de
 DecrunchFinalCode:
-        ld	a, #06
+        ld	a, #04
         sub	ly        
 StabilizeLoop:
         jr	z, WriteToPSG
