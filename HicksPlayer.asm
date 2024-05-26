@@ -48,13 +48,12 @@ MEND
 ;
 ; Copy string from dictionary
 ;
-MACRO   _CopyFromDictLoop	LoopReg ; 11 * N NOPS
+MACRO   _CopyFromDictLoop	LoopReg ; 10 * N NOPS - 1
 @CopyLoop:
         ld	a, (de)     
         ld	(hl), a
         inc	l
         inc	e
-        nop
         dec	{LoopReg}
         jr	nz, @CopyLoop
 MEND
@@ -62,14 +61,33 @@ MEND
 ;
 ; Copy literals from crunched data.
 ;
-MACRO   _CopyLiteralLoop	LoopReg ; 11 * N NOPS
+MACRO   _CopyLiteralLoop	LoopReg ; 10 + 10 * N NOPS - 1
+        ds      2
+        srl	{LoopReg}
+        jp	nc, @CopyLoop
+        jr	z, @CopyOne
+        dec	sp
+        pop	de
+        ld	(hl), d
+        inc	l
 @CopyLoop:
-        ld	a, (hl)     
-        ld	(de), a
-        inc	hl
-        inc	e
+        pop	de
+        ld	(hl), e
+        inc	l
+        ld	(hl), d
+        inc	l
+        ds      7
         dec	{LoopReg}
         jr	nz, @CopyLoop
+        
+        jr      @CopyEnd
+@CopyOne:
+        nop
+        dec	sp
+        pop	de
+        ld	(hl), d
+        inc     l
+@CopyEnd:
 MEND
 
         jp	PlayerInit
@@ -173,10 +191,10 @@ DoFramesLoop:
         pop	hl
         ld	sp, hl
         exx
-        ds      11
+        ds      9
         dec	c
         ld	d, c
-        jr	z, PreDecrunchFinalize
+        jp	z, PreDecrunchFinalize
         jr	FetchNewCrunchMarker
 
         ;
@@ -241,21 +259,15 @@ CopyLiteral:
         inc	a
 SkipInc:
 
-        ex	de, hl
-        ld	hl, #0000
-        add	hl, sp
-
+        
         cp	c
         jr	nc, CopySubLiteralChain
 
         _UpdateNrCopySlot	(void)          ; 4 NOPS
         _CopyLiteralLoop        b
 
-        ld	sp, hl
-        ex	de, hl
-
         jp	FetchNewCrunchMarker
-
+        
 
         ;
         ; We have more literal to copy than available copy slots
@@ -265,16 +277,11 @@ CopySubLiteralChain:
         _AdjustCopySizeWithRemainingSlots       (void)
         _CopyLiteralLoop	c
 
-        ld	sp, hl
-        ex	de, hl
-
         ld	d, b
 
-        nop
 PreDecrunchFinalize:
-        nop
+        ds      2
         ld	h, #80
-
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
