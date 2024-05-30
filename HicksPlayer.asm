@@ -209,7 +209,8 @@ RestartCopySubStringFromDict:
         _CopyFromDictLoop	c                             ; 12 * N NOPS
         
         ld	d, b
-        ld	h, #00
+        ld	h, c
+        ld	l, c
         jp	DecrunchFinalize
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -280,8 +281,8 @@ CopySubLiteralChain:
         ld	d, b
 
 PreDecrunchFinalize:
-        ds      2
-        ld	h, #80
+        ds      1
+        ld	hl, #8000
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -292,7 +293,6 @@ PreDecrunchFinalize:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 DecrunchFinalize:
-        ld	l, #00
         add	hl, sp
 
         ld	sp, (ReLoadDecrunchSavedState)
