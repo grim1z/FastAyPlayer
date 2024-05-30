@@ -326,14 +326,14 @@ class HicksConvertor:
 	def __init__(self, FileName):
 		self.FileName = FileName
 		self.Compressor = LzssCompressor(256, 31)
-#			         0, 2, (1+3), 4, 6, 8, 9, 10, 11, 12, (5+13), 7]
-		self.RegOrder = [0, 2, 1,     4, 6, 8, 9, 10, 11, 12, 5,      7]
+#			         0, 2, (1+3), 4, (5+13), 6, 8, 9, 10, 11, 12, 7]
+		self.RegOrder = [0, 2, 1,     4, 5,      6, 7, 8, 9, 10, 11, 12]
 
 	def MergeRegisters(self, R1, R2):
 		for i in range (len(R1)):
 			R1[i] = (R2[i] & 0x0f) << 4 | (R1[i] & 0x0f)
 
-	def AdjustR7ForR13(self, R7, R13):
+	def AdjustR6ForR13(self, R7, R13):
 		for i in range (len(R7)):
 			if R13[i] == 0xFF:
 				R7[i] = R7[i] | 0x80
@@ -402,8 +402,8 @@ class HicksConvertor:
 		self.MergeRegisters(self.YmFile.Registers[1], self.YmFile.Registers[3])
 		print(f"  - Merge registers 5+13")
 		self.MergeRegisters(self.YmFile.Registers[5], self.YmFile.Registers[13])
-		print(f"  - Adjust R7 register for R13 no reset case")
-		self.AdjustR7ForR13(self.YmFile.Registers[7], self.YmFile.Registers[13])
+		print(f"  - Adjust R6 register for R13 no reset case")
+		self.AdjustR6ForR13(self.YmFile.Registers[6], self.YmFile.Registers[13])
 
 #		for r in range(12):
 #			Constant = True

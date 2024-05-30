@@ -317,6 +317,16 @@ StabilizeLoop:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+        ;
+        ; Wait loop for constant time when register 13 is ignored.
+        ;
+SkipRegister13:
+        ld	a, #06        
+WaitLoop:
+        dec	a
+        jr	nz, WaitLoop
+        jp	ReturnFromSkipRegister13
+
 ;
 ; A:   Value to write in the register
 ; B:   #F4
@@ -330,22 +340,22 @@ MACRO   WriteToPSGReg	RegNumber
         out	(c), 0
         exx
         out	(c), a
-        exx
-        out	(c), l
-        out	(c), h
-        exx
+        ld	a, e
+        out	(#FF), a
+        ld	a, d
+        out	(#FF), a
 MEND
 
 WriteToPSG:
         ld	hl, (CurrentDecrunchBuffer)
         ld	h, DECRUNCH_BUFFER_ADDR_HIGH
-        ld	bc, #f406
-        ld	de, #0102
+        ld	bc, #f402
+        ld	de, #f6b6
         exx
         ld	b, #f6
-        ld	hl, #c080
-        out	(c), h  ; F6 = #C0
         exx
+        ld	a, d
+        out	(#FF), a
 
         ;
         ; Write to register 0
@@ -359,109 +369,114 @@ WriteToPSG:
         ;
         ld	a, (hl)
         inc	h
-        WriteToPSGReg	e
+        WriteToPSGReg	c
 
         ;
         ; Write to register 1
         ;
         ld	a, (hl)
-        WriteToPSGReg	d
+        dec     c
+        WriteToPSGReg	c
 
         ;
         ; Write to register 3
         ;
-        inc     e
-        rra
-        rra
-        rra
-        rra
+        ld	a, (hl)
         inc	h
-        WriteToPSGReg	e
+        rra
+        rra
+        rra
+        rra
+        ld	c, 3
+        WriteToPSGReg	c
 
         ;
         ; Write to register 4
         ;
         ld	a, (hl)
         inc	h
-        inc	e
-        WriteToPSGReg	e
+        inc	c
+        WriteToPSGReg	c
+
+        ;
+        ; Write to register 5
+        ;
+        ld	a, (hl)
+        inc     c
+        WriteToPSGReg	c
+
+        ;
+        ; Write to register 13
+        ;
+        ld	a, (hl)
+        inc	h
+        bit	7, (hl)                 ; Test "Continue" bit. If set, do not write to register 13.
+        jp	nz, SkipRegister13
+        rra
+        rra
+        rra
+        rra
+        ld	c, 13
+        WriteToPSGReg	c
+
+ReturnFromSkipRegister13:
 
         ;
         ; Write to register 6
         ;
         ld	a, (hl)
         inc	h
+        ld	c, 6
+        WriteToPSGReg	c
+
+        ;
+        ; Write to register 7
+        ;
+        ld	a, (hl)
+        inc     h
+        inc     c
         WriteToPSGReg	c
 
         ;
         ; Write to register 8
         ;
-        ld	d, #08
         ld	a, (hl)
         inc	h
-        WriteToPSGReg	d
+        inc     c
+        WriteToPSGReg	c
 
         ;
         ; Write to register 9
         ;
-        inc	d
         ld	a, (hl)
         inc	h
-        WriteToPSGReg	d
+        inc	c
+        WriteToPSGReg	c
 
         ;
         ; Write to register 10
         ;
-        inc	d
         ld	a, (hl)
         inc	h
-        WriteToPSGReg	d
+        inc	c
+        WriteToPSGReg	c
         
         ;
         ; Write to register 11
         ;
-        inc	d
         ld	a, (hl)
         inc	h
-        WriteToPSGReg	d
+        inc	c
+        WriteToPSGReg	c
 
 if      SKIP_R12!=1
         ;
         ; Write to register 12
         ;
         ld	a, (hl)
-        inc	h
-        inc	d
-        WriteToPSGReg	d
-endif
-
-        ;
-        ; Write to register 5
-        ;
-        ld	a, (hl)
-        inc     e
-        WriteToPSGReg	e
-
-        ;
-        ; Write to register 13
-        ;
-        inc	h
-        bit	7, (hl)                 ; Test "Continue" bit. If set, do not write to register 13.
-        jr	nz, SkipRegister13
-        inc     d
-        rra
-        rra
-        rra
-        rra
-        WriteToPSGReg	d
-
-ReturnFromSkipRegister13:
-        ;
-        ; Write to register 7
-        ;
-        ld	a, (hl)
-        inc     c
+        inc	c
         WriteToPSGReg	c
+endif
 
         ;
         ; Move to the next decrunch buffer and handle buffer loop.
@@ -484,16 +499,6 @@ ReturnFromSkipBufferReset:
         ;
 ReturnAddress = $+1
         jp	#0000
-
-        ;
-        ; Wait loop for constant time when register 13 is ignored.
-        ;
-SkipRegister13:
-        ld	a, #06        
-WaitLoop
-        dec	a
-        jr	nz, WaitLoop
-        jr	ReturnFromSkipRegister13
 
         ;
         ; Wait loop for constant time if there is no need to reset decrunch buffers
