@@ -473,11 +473,11 @@ ReturnFromSkipRegister13:
         jr	nz, SkipBufferReset
 
         ; Loop back to the first decrunch buffer.
-        ld	bc, DecrunchSavedState
-        ld	(ReLoadDecrunchSavedState), bc
         ld	h, DECRUNCH_BUFFER_ADDR_HIGH
-ReturnFromSkipBufferReset:
         ld	(CurrentDecrunchBuffer), hl
+        ld	hl, DecrunchSavedState                  ; TODO: optimisation après avoir déplacé SavedState : reset seulement le poids faible. Gain = 3 NOPS.
+        ld	(ReLoadDecrunchSavedState), hl
+ReturnFromSkipBufferReset:
 
         ;
         ; Return to the calling code.
@@ -499,8 +499,9 @@ WaitLoop
         ; Wait loop for constant time if there is no need to reset decrunch buffers
         ;
 SkipBufferReset:
-        ds	6
+        ds      5
         inc	h
+        ld	(CurrentDecrunchBuffer), hl
         jr	ReturnFromSkipBufferReset
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
