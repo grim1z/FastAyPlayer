@@ -318,164 +318,143 @@ StabilizeLoop:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
         ;
-        ; Wait loop for constant time when register 13 is ignored.
+        ; Write a value in a PSG register
         ;
-SkipRegister13:
-        ld	a, #06        
-WaitLoop:
-        dec	a
-        jr	nz, WaitLoop
-        jp	ReturnFromSkipRegister13
 
-;
-; A:   Value to write in the register
-; B:   #F4
-;
-; B':  #F6
-; HL': Constant #C080
-;
-MACRO   WriteToPSGReg	RegNumber
+        NO_REG_SHIFT	= 0
+        REG_SHIFT	= 1
+
+MACRO   WriteToPSGReg	RegNumber, Shift
         out	(c), {RegNumber}
-        exx
-        out	(c), 0
-        exx
+
+        ld	a, #26
+        out	(#FF), a        ; Equivalent to out &F600, %00XXXXXX
+
+        ld	a, (hl)
+
+if {Shift}==REG_SHIFT
+        rra
+        rra
+        rra
+        rra
+endif
+
         out	(c), a
         ld	a, e
-        out	(#FF), a
+        out	(#FF), a        ; Equivalent to out &F600, %10XXXXXX
         ld	a, d
-        out	(#FF), a
+        out	(#FF), a        ; Equivalent to out &F600, %11XXXXXX
 MEND
 
+        ;
+        ;       Main PSG Programming code
+        ;
 WriteToPSG:
         ld	hl, (CurrentDecrunchBuffer)
         ld	h, DECRUNCH_BUFFER_ADDR_HIGH
         ld	bc, #f402
         ld	de, #f6b6
-        exx
-        ld	b, #f6
-        exx
         ld	a, d
         out	(#FF), a
 
         ;
         ; Write to register 0
         ;
-        ld	a, (hl)
+        WriteToPSGReg	0, NO_REG_SHIFT
         inc	h
-        WriteToPSGReg	0
 
         ;
         ; Write to register 2
         ;
-        ld	a, (hl)
+        WriteToPSGReg	c, NO_REG_SHIFT
         inc	h
-        WriteToPSGReg	c
 
         ;
         ; Write to register 1
         ;
-        ld	a, (hl)
         dec     c
-        WriteToPSGReg	c
+        WriteToPSGReg	c, NO_REG_SHIFT
 
         ;
         ; Write to register 3
         ;
-        ld	a, (hl)
-        inc	h
-        rra
-        rra
-        rra
-        rra
         ld	c, 3
-        WriteToPSGReg	c
+        WriteToPSGReg	c, REG_SHIFT
+        inc	h
 
         ;
         ; Write to register 4
         ;
-        ld	a, (hl)
-        inc	h
         inc	c
-        WriteToPSGReg	c
+        WriteToPSGReg	c, NO_REG_SHIFT
+        inc	h
 
         ;
         ; Write to register 5
         ;
-        ld	a, (hl)
         inc     c
-        WriteToPSGReg	c
+        WriteToPSGReg	c, NO_REG_SHIFT
 
         ;
         ; Write to register 13
         ;
-        ld	a, (hl)
         inc	h
         bit	7, (hl)                 ; Test "Continue" bit. If set, do not write to register 13.
-        jp	nz, SkipRegister13
-        rra
-        rra
-        rra
-        rra
         ld	c, 13
-        WriteToPSGReg	c
-
+        jp	nz, SkipRegister13
+        dec     h        
+        WriteToPSGReg	c, REG_SHIFT
+        inc     h
 ReturnFromSkipRegister13:
 
         ;
         ; Write to register 6
         ;
-        ld	a, (hl)
-        inc	h
         ld	c, 6
-        WriteToPSGReg	c
+        WriteToPSGReg	c, NO_REG_SHIFT
+        inc	h
 
         ;
         ; Write to register 7
         ;
-        ld	a, (hl)
-        inc     h
         inc     c
-        WriteToPSGReg	c
+        WriteToPSGReg	c, NO_REG_SHIFT
+        inc     h
 
         ;
         ; Write to register 8
         ;
-        ld	a, (hl)
-        inc	h
         inc     c
-        WriteToPSGReg	c
+        WriteToPSGReg	c, NO_REG_SHIFT
+        inc	h
 
         ;
         ; Write to register 9
         ;
-        ld	a, (hl)
-        inc	h
         inc	c
-        WriteToPSGReg	c
+        WriteToPSGReg	c, NO_REG_SHIFT
+        inc	h
 
         ;
         ; Write to register 10
         ;
-        ld	a, (hl)
-        inc	h
         inc	c
-        WriteToPSGReg	c
+        WriteToPSGReg	c, NO_REG_SHIFT
+        inc	h
         
         ;
         ; Write to register 11
         ;
-        ld	a, (hl)
-        inc	h
         inc	c
-        WriteToPSGReg	c
+        WriteToPSGReg	c, NO_REG_SHIFT
+        inc	h
 
 if      SKIP_R12!=1
         ;
         ; Write to register 12
         ;
-        ld	a, (hl)
         inc	c
-        WriteToPSGReg	c
+        WriteToPSGReg	c, NO_REG_SHIFT
 endif
 
         ;
@@ -508,6 +487,17 @@ SkipBufferReset:
         inc	h
         ld	(CurrentDecrunchBuffer), hl
         jr	ReturnFromSkipBufferReset
+
+        ;
+        ; Wait loop for constant time when register 13 is ignored.
+        ;
+SkipRegister13:
+        nop
+        ld	a, #06  
+WaitLoop:
+        dec	a
+        jr	nz, WaitLoop
+        jp	ReturnFromSkipRegister13
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
