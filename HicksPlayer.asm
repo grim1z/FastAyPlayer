@@ -37,9 +37,8 @@ MEND
 ;
 ; Compute the source address of data in the dictionary
 ;
-MACRO   _ComputeCopyFromDictSourceAddr   ; 8 NOPS
-        dec	sp
-        pop	af
+MACRO   _ComputeCopyFromDictSourceAddr   ; 4 NOPS
+        ld	a, d
         sub	l
         cpl
         ld	e, a
@@ -61,33 +60,23 @@ MEND
 ;
 ; Copy literals from crunched data.
 ;
-MACRO   _CopyLiteralLoop	LoopReg ; 10 + 10 * N NOPS - 1
-        ds      2
-        srl	{LoopReg}
-        jp	nc, @CopyLoop
-        jr	z, @CopyOne
-        dec	sp
-        pop	de
-        ld	(hl), d
-        inc	l
+
+MACRO   _CopyLiteralLoop   LoopReg ; 2 + 10 * N NOPS
 @CopyLoop:
-        pop	de
-        ld	(hl), e
-        inc	l
-        ld	(hl), d
-        inc	l
-        ds      7
-        dec	{LoopReg}
-        jr	nz, @CopyLoop
-        
-        jr      @CopyEnd
-@CopyOne:
-        nop
-        dec	sp
-        pop	de
-        ld	(hl), d
+        ld      (hl), d
         inc     l
-@CopyEnd:
+        ds      3
+        dec     {LoopReg}
+        jr      nz, @ContinueLoop
+        jr      @ExitLoop
+@ContinueLoop:
+        pop     de
+        ld      (hl), e
+        inc     l
+        dec     {LoopReg}
+        jp      nz, @CopyLoop
+        dec     sp
+@ExitLoop:
 MEND
 
         jp	PlayerInit
@@ -141,8 +130,10 @@ NrDataToDecrunch:  equ	$ + 1
         ;
 FetchNewCrunchMarker:
         inc	ly
-        dec	sp
-        pop	af              ; Fetch marker from crunch data.
+
+        pop	de
+        ld	a, e
+
         cp	#1f
 
         ; TODO: changer l'ordre des jump pour aller en priorité sur "CopyFromDict"
@@ -163,7 +154,6 @@ FetchNewCrunchMarker:
         cp	c
         jp	nc, CopySubStringFromDict
 
-
         _UpdateNrCopySlot	(void)                  ; 4 NOPS
         _ComputeCopyFromDictSourceAddr	(void)          ; 8 (+1) NOPS
 RestartCopyFromDict:
@@ -182,16 +172,14 @@ RestartCopyFromDict:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         
 DoFramesLoop:
-        dec	sp
-        pop	af
-        ld	(hl), a
-        inc     l
-
+        ld	(hl), d
+        inc	l
+        
         exx
         pop	hl
         ld	sp, hl
         exx
-        ds      9
+        ds      10
         dec	c
         ld	d, c
         jp	z, PreDecrunchFinalize
@@ -202,7 +190,7 @@ DoFramesLoop:
         ;
 CopySubStringFromDict:
         _AdjustCopySizeWithRemainingSlots	(void)        ; 2 NOPS
-        _ComputeCopyFromDictSourceAddr	(void)                ; 8 (+1) NOPS
+        _ComputeCopyFromDictSourceAddr	(void)                ; 4 (+1) NOPS
 
 RestartCopySubStringFromDict:
         ld	d, h                           ; TODO: copier LD D, H dans restart decrunch et l'intégrer dans _ComputeCopyFromDictSourceAddr pour plus de clareté.
@@ -222,12 +210,11 @@ RestartCopySubStringFromDict:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 RestartPausedDecrunch:
-        nop
         inc	ly
         rla
         jp	c, RestartCopyLiteral
         
-        ds      11
+        ds      7
 
         ld	a, d
         cp	c
@@ -248,9 +235,10 @@ RestartSubCopyFromDict:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 RestartCopyLiteral:
-        ds	3
-        
+        ds	1
         ld	a, d
+        dec	sp
+        pop	de
         jr	SkipInc                 ; TODO: peut être remplacé par "dec a; nop; nop"
 
         ;
@@ -258,6 +246,7 @@ RestartCopyLiteral:
         ;
 CopyLiteral:
         inc	a
+        ds      3
 SkipInc:
 
         
@@ -304,7 +293,7 @@ DecrunchFinalCode:
 StabilizeLoop:
         jr	z, WriteToPSG
 
-        ds      28
+        ds      23
 
         dec	a
         jr	StabilizeLoop           ; TODO: jr nz,SabiliteLoop (skip jr z, WriteToPSG) ---> Gagne 1 NOP sur la sortie.
