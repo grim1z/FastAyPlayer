@@ -460,9 +460,8 @@ endif
         ;
         ; Move to the next decrunch buffer and handle buffer loop.
         ;
-        ld	hl, (CurrentDecrunchBuffer)
+        ld	a, (CurrentDecrunchBufferHigh)
         inc	l
-        ld	a, h
         cp	DECRUNCH_BUFFER_ADDR_HIGH + NR_REGISTERS_TO_DECRUNCH - 1
         jr	nz, SkipBufferReset
 
@@ -483,7 +482,8 @@ ReturnAddress = $+1
         ; Wait loop for constant time if there is no need to reset decrunch buffers
         ;
 SkipBufferReset:
-        ds      5
+        ds	4
+        ld	h, a
         inc	h
         ld	(CurrentDecrunchBuffer), hl
         jr	ReturnFromSkipBufferReset
