@@ -327,7 +327,7 @@ StabilizeLoop:
 MACRO   WriteToPSGReg	RegNumber, Shift
         out	(c), {RegNumber}
 
-        ld	a, #26
+        ld	a, d
         out	(#FF), a        ; Equivalent to out &F600, %00XXXXXX
 
         ld	a, (hl)
@@ -342,7 +342,7 @@ endif
         out	(c), a
         ld	a, e
         out	(#FF), a        ; Equivalent to out &F600, %10XXXXXX
-        ld	a, d
+        or	b               ; A or B --> #F6 Great :)
         out	(#FF), a        ; Equivalent to out &F600, %11XXXXXX
 MEND
 
@@ -353,7 +353,7 @@ WriteToPSG:
         ld	hl, (CurrentDecrunchBuffer)
         ld	h, DECRUNCH_BUFFER_ADDR_HIGH
         ld	bc, #f402
-        ld	de, #f6b6
+        ld	de, #26b6
         ld	a, d
         out	(#FF), a
 
@@ -492,7 +492,6 @@ SkipBufferReset:
         ; Wait loop for constant time when register 13 is ignored.
         ;
 SkipRegister13:
-        nop
         ld	a, #06  
 WaitLoop:
         dec	a
