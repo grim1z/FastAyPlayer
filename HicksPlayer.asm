@@ -42,6 +42,7 @@ MACRO   _ComputeCopyFromDictSourceAddr   ; 4 NOPS
         sub	l
         cpl
         ld	e, a
+        ld	d, h
 MEND
 
 ;
@@ -155,13 +156,66 @@ FetchNewCrunchMarker:
         jp	nc, CopySubStringFromDict
 
         _UpdateNrCopySlot	(void)                  ; 4 NOPS
-        _ComputeCopyFromDictSourceAddr	(void)          ; 8 (+1) NOPS
-RestartCopyFromDict:
-        ld	d, h
+        _ComputeCopyFromDictSourceAddr	(void)          ; 5 NOPS
 
-        _CopyFromDictLoop	b                       ; 12 * N NOPS
+RestartCopyFromDict:
+        _CopyFromDictLoop	b                       ; 10 * N - 1 NOPS
 
         jr	FetchNewCrunchMarker
+
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;;
+        ;;      Copy Literal
+        ;;
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+RestartCopyLiteral:
+        ds	1
+        ld	a, d
+        dec	sp
+        pop	de
+        jr	SkipInc
+
+CopyLiteral:
+        inc	a
+        ds	3
+        
+SkipInc:        
+        cp	c
+        jr	nc, CopySubLiteralChain
+
+        _UpdateNrCopySlot	(void)          ; 4 NOPS
+        _CopyLiteralLoop	b               ; 2 + 10 * N NOPS
+
+        jp	FetchNewCrunchMarker
+
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;;
+        ;;      Continue paused Decrunch
+        ;;
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+RestartPausedDecrunch:
+        inc	ly
+        rla
+        jp	c, RestartCopyLiteral
+        
+        ds      7
+
+        ld	a, d
+        cp	c
+        ld	d, h
+        jp	nc, RestartSubCopyFromDict
+
+        _UpdateNrCopySlot	(void)          ; 4 NOPS
+        jr	RestartCopyFromDict
+RestartSubCopyFromDict:
+        _AdjustCopySizeWithRemainingSlots	(void)
+        jr	RestartCopySubStringFromDict      
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -185,22 +239,6 @@ DoFramesLoop:
         jp	z, PreDecrunchFinalize
         jr	FetchNewCrunchMarker
 
-        ;
-        ;       Copy from dictionnary
-        ;
-CopySubStringFromDict:
-        _AdjustCopySizeWithRemainingSlots	(void)        ; 2 NOPS
-        _ComputeCopyFromDictSourceAddr	(void)                ; 4 (+1) NOPS
-
-RestartCopySubStringFromDict:
-        ld	d, h                           ; TODO: copier LD D, H dans restart decrunch et l'intégrer dans _ComputeCopyFromDictSourceAddr pour plus de clareté.
-        _CopyFromDictLoop	c                             ; 12 * N NOPS
-        
-        ld	d, b
-        ld	h, c
-        ld	l, c
-        jp	DecrunchFinalize
-
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;
@@ -209,55 +247,20 @@ RestartCopySubStringFromDict:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-RestartPausedDecrunch:
-        inc	ly
-        rla
-        jp	c, RestartCopyLiteral
-        
-        ds      7
-
-        ld	a, d
-        cp	c
-        jp	nc, RestartSubCopyFromDict
-
-        _UpdateNrCopySlot	(void)          ; 4 NOPS
-        jr	RestartCopyFromDict
-RestartSubCopyFromDict:
-        _AdjustCopySizeWithRemainingSlots (void)
-        jr	RestartCopySubStringFromDict
-
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        ;;
-        ;;      Copy Literal
-        ;;
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-RestartCopyLiteral:
-        ds	1
-        ld	a, d
-        dec	sp
-        pop	de
-        jr	SkipInc                 ; TODO: peut être remplacé par "dec a; nop; nop"
-
         ;
-        ;       Copy literals
+        ;       Copy from dictionnary
         ;
-CopyLiteral:
-        inc	a
-        ds      3
-SkipInc:
+CopySubStringFromDict:
+        _AdjustCopySizeWithRemainingSlots	(void)        ; 2 NOPS
+        _ComputeCopyFromDictSourceAddr	(void)                ; 4 (+1) NOPS
 
+RestartCopySubStringFromDict:
+        _CopyFromDictLoop	c                             ; 12 * N NOPS
         
-        cp	c
-        jr	nc, CopySubLiteralChain
-
-        _UpdateNrCopySlot	(void)          ; 4 NOPS
-        _CopyLiteralLoop        b
-
-        jp	FetchNewCrunchMarker
-        
+        ld	d, b
+        ld	h, c
+        ld	l, c
+        jp	DecrunchFinalize
 
         ;
         ; We have more literal to copy than available copy slots
@@ -388,7 +391,7 @@ WriteToPSG:
         ; Write to register 13
         ;
         inc	h
-        bit	7, (hl)                 ; Test "Continue" bit. If set, do not write to register 13.
+        bit	7, (hl)                 ; Check if we have to program register 13.
         ld	c, 13
         jp	nz, SkipRegister13
         dec     h        
