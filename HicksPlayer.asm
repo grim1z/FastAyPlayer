@@ -288,15 +288,12 @@ CopySubStringFromDict:
         _ComputeCopyFromDictSourceAddr	(void)                ; 4 (+1) NOPS
 
 RestartCopySubStringFromDict:
-        _CopyFromDictLoop	c                             ; 12 * N NOPS
-
-        ;       DE = src copy
-        
+        _CopyFromDictLoop	c                             ; 12 * N NOPS        
         ld	d, b
         ld	h, c
-        ld	l, c
+
         dec     ly
-        jr	z, WriteToPSG
+        jr	z, SaveDecrunchState
         jr      EnterStabilizeLoop
 
         ;
@@ -305,23 +302,17 @@ RestartCopySubStringFromDict:
 CopySubLiteralChain:
         sub     c
         _CopyLiteralLoop	c
-
         ld	d, a
 
 DecrunchFinalize:
-        ld	hl, #8000
+        ld	h, #80
 
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        ;;
-        ;;      Decrunch stabilization loop
-        ;;
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+        ;
+        ; Decrunch stabilization loop
+        ;
         dec     ly
 StabilizeLoop:
-        jr	z, WriteToPSG
+        jr	z, SaveDecrunchState
 
         ds      3
 EnterStabilizeLoop:
@@ -330,6 +321,16 @@ EnterStabilizeLoop:
         dec	ly
         jr	StabilizeLoop
 
+        ;
+        ; Write back to memory the current decrunch state.
+        ;
+SaveDecrunchState:
+        ld	l, c
+        add	hl, sp
+        ld	sp, (ReLoadDecrunchSavedState)
+        push	hl
+        push	de
+
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;
@@ -337,16 +338,6 @@ EnterStabilizeLoop:
         ;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-        ;
-        ;       Main PSG Programming code
-        ;
-WriteToPSG:
-        add	hl, sp
-        ld	sp, (ReLoadDecrunchSavedState)
-        push	hl
-        push	de
-
 
 DecrunchFinalCode:
         ld	hl, (CurrentDecrunchBuffer)
