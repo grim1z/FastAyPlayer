@@ -80,6 +80,35 @@ MACRO   _CopyLiteralLoop   LoopReg ; 2 + 10 * N NOPS
 @ExitLoop:
 MEND
 
+        ;
+        ; Write a value in a PSG register
+        ;
+
+        NO_REG_SHIFT	= 0
+        REG_SHIFT	= 1
+
+MACRO   WriteToPSGReg	RegNumber, Shift
+        out	(c), {RegNumber}
+
+        ld	a, d
+        out	(#FF), a        ; Equivalent to out &F600, %00XXXXXX
+
+        ld	a, (hl)
+
+if {Shift}==REG_SHIFT
+        rra
+        rra
+        rra
+        rra
+endif
+
+        out	(c), a
+        ld	a, e
+        out	(#FF), a        ; Equivalent to out &F600, %10XXXXXX
+        or	b               ; A or B --> #F6 Great :)
+        out	(#FF), a        ; Equivalent to out &F600, %11XXXXXX
+MEND
+
         jp	PlayerInit
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -233,10 +262,11 @@ DoFramesLoop:
         pop	hl
         ld	sp, hl
         exx
-        ds      6
+        ds      5
         dec	c
         ld	d, c
-        jp	z, PreDecrunchFinalize
+        jp	z, DecrunchFinalize
+        nop
         jr	FetchNewCrunchMarker
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -262,42 +292,38 @@ RestartCopySubStringFromDict:
         ld	d, b
         ld	h, c
         ld	l, c
-        jp	DecrunchFinalize
+        ds	1
+        dec     ly
+        jr	z, WriteToPSG
+        jr      EnterStabilizeLoop
 
         ;
         ; We have more literal to copy than available copy slots
         ;
 CopySubLiteralChain:
-        nop
         sub     c
         _CopyLiteralLoop	c
 
         ld	d, a
 
-PreDecrunchFinalize:
-        ds      1
+DecrunchFinalize:
         ld	hl, #8000
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;
-        ;;      Finish decrunch code
+        ;;      Decrunch stabilization loop
         ;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-DecrunchFinalize:
-        add	hl, sp
-
-        ld	sp, (ReLoadDecrunchSavedState)
-        push	hl
-        push	de
-DecrunchFinalCode:
         dec     ly
 StabilizeLoop:
         jr	z, WriteToPSG
 
-        ds      21
+        ds      3
+EnterStabilizeLoop:
+        ds      18
 
         dec	ly
         jr	StabilizeLoop
@@ -311,38 +337,16 @@ StabilizeLoop:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
         ;
-        ; Write a value in a PSG register
-        ;
-
-        NO_REG_SHIFT	= 0
-        REG_SHIFT	= 1
-
-MACRO   WriteToPSGReg	RegNumber, Shift
-        out	(c), {RegNumber}
-
-        ld	a, d
-        out	(#FF), a        ; Equivalent to out &F600, %00XXXXXX
-
-        ld	a, (hl)
-
-if {Shift}==REG_SHIFT
-        rra
-        rra
-        rra
-        rra
-endif
-
-        out	(c), a
-        ld	a, e
-        out	(#FF), a        ; Equivalent to out &F600, %10XXXXXX
-        or	b               ; A or B --> #F6 Great :)
-        out	(#FF), a        ; Equivalent to out &F600, %11XXXXXX
-MEND
-
-        ;
         ;       Main PSG Programming code
         ;
 WriteToPSG:
+        add	hl, sp
+        ld	sp, (ReLoadDecrunchSavedState)
+        push	hl
+        push	de
+
+
+DecrunchFinalCode:
         ld	hl, (CurrentDecrunchBuffer)
         ld	h, DECRUNCH_BUFFER_ADDR_HIGH
         ld	bc, #f402
