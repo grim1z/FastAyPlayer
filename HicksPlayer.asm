@@ -181,7 +181,7 @@ CopyFromDict:
         ld	a, e
         sub	#1d
         cp	c
-        jp	nc, CopySubStringFromDict
+        jr	nc, CopySubStringFromDict
 
         _UpdateNrCopySlot	(void)                  ; 4 NOPS
         _ComputeCopyFromDictSourceAddr	(void)          ; 5 NOPS
@@ -199,19 +199,12 @@ RestartCopyFromDict:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-RestartCopyLiteral:
-        ld	a, d
-        dec	sp
-        pop	de
-        jr	SkipInc
-
 CopyLiteral:
         jr	z, DoFramesLoop
         ld	a, e
         inc	a
-        ds	1
         
-SkipInc:        
+RestartCopyLiteral:
         cp	c
         jr	nc, CopySubLiteralChain
 
@@ -231,9 +224,18 @@ SkipInc:
 RestartPausedDecrunch:
         dec	ly
         rla
-        jp	c, RestartCopyLiteral
-        
-        ds      6
+        jr	nc, RestartPausedCopyFromDict
+
+        ;
+        ; Restart Copy Literal
+        ;
+        ld	a, d
+        dec	sp
+        pop	de
+        jr	RestartCopyLiteral
+
+RestartPausedCopyFromDict:
+        ds      5
 
         ld	a, d
         cp	c
@@ -244,6 +246,7 @@ RestartPausedDecrunch:
         jr	RestartCopyFromDict
 RestartSubCopyFromDict:
         _AdjustCopySizeWithRemainingSlots	(void)
+        nop
         jr	RestartCopySubStringFromDict      
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -262,7 +265,7 @@ DoFramesLoop:
         pop	hl
         ld	sp, hl
         exx
-        ds      5
+        ds      4
         dec	c
         ld	d, c
         jp	z, DecrunchFinalize
@@ -292,7 +295,6 @@ RestartCopySubStringFromDict:
         ld	d, b
         ld	h, c
         ld	l, c
-        ds	1
         dec     ly
         jr	z, WriteToPSG
         jr      EnterStabilizeLoop
@@ -323,7 +325,7 @@ StabilizeLoop:
 
         ds      3
 EnterStabilizeLoop:
-        ds      18
+        ds      17
 
         dec	ly
         jr	StabilizeLoop
