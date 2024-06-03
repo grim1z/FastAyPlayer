@@ -121,7 +121,7 @@ CurrentDecrunchBufferHigh equ $ + 2
 
 NrDataToDecrunch:  equ	$ + 1
         ld	c, #00
-        ld	ly, #00
+        ld	ly, #05
         inc	d
         dec	d
         jr	nz, RestartPausedDecrunch
@@ -130,7 +130,7 @@ NrDataToDecrunch:  equ	$ + 1
         ; Load a new marker
         ;
 FetchNewCrunchMarker:
-        inc	ly
+        dec	ly
 
         pop	de
         ld	a, e
@@ -200,7 +200,7 @@ SkipInc:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 RestartPausedDecrunch:
-        inc	ly
+        dec	ly
         rla
         jp	c, RestartCopyLiteral
         
@@ -291,14 +291,13 @@ DecrunchFinalize:
         push	hl
         push	de
 DecrunchFinalCode:
-        ld	a, #04
-        sub	ly        
+        dec     ly
 StabilizeLoop:
         jr	z, WriteToPSG
 
-        ds      23
+        ds      22
 
-        dec	a
+        dec	ly
         jr	StabilizeLoop           ; TODO: jr nz,SabiliteLoop (skip jr z, WriteToPSG) ---> Gagne 1 NOP sur la sortie.
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
