@@ -93,7 +93,7 @@ MEND
 PlayerEntryPoint:
 ReLoadDecrunchSavedState equ $ + 1
         ld	sp, DecrunchSavedState
-        pop	de      ; d = restart if not null       e = ???
+        pop	de      ; d = restart if not null       e = Lower byte of source address if restart copy from windows. Undef otherwise.
         pop	hl      ; Current position in decrunch buffer
         ld	(ReLoadDecrunchSavedState), sp
 
@@ -133,14 +133,11 @@ FetchNewCrunchMarker:
         dec	ly
 
         pop	de
-        ld	a, e
 
-        cp	#1f
+        ld	a, #1F
+        cp      e
 
-        ; TODO: changer l'ordre des jump pour aller en priorité sur "CopyFromDict"
-
-        jr	z, DoFramesLoop    ; A = 1F --> Reset source buffer for frame loop
-        jr	c, CopyLiteral          ; A < 1F --> Copy literals
+        jr	nc, CopyLiteral         ; A < 1F --> Copy literals
                                         ; A > 1F --> Copy from dictionnary
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -151,6 +148,8 @@ FetchNewCrunchMarker:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+CopyFromDict:
+        ld	a, e
         sub	#1d
         cp	c
         jp	nc, CopySubStringFromDict
@@ -159,7 +158,7 @@ FetchNewCrunchMarker:
         _ComputeCopyFromDictSourceAddr	(void)          ; 5 NOPS
 
 RestartCopyFromDict:
-        _CopyFromDictLoop	b                       ; 10 * N - 1 NOPS
+        _CopyFromDictLoop	b                       ; 10 * N - 1 NOPS       - MOD: A, DE, HL + B
 
         jr	FetchNewCrunchMarker
 
@@ -172,15 +171,16 @@ RestartCopyFromDict:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 RestartCopyLiteral:
-        ds	1
         ld	a, d
         dec	sp
         pop	de
         jr	SkipInc
 
 CopyLiteral:
+        jr	z, DoFramesLoop
+        ld	a, e
         inc	a
-        ds	3
+        ds	1
         
 SkipInc:        
         cp	c
@@ -204,7 +204,7 @@ RestartPausedDecrunch:
         rla
         jp	c, RestartCopyLiteral
         
-        ds      7
+        ds      6
 
         ld	a, d
         cp	c
@@ -233,7 +233,7 @@ DoFramesLoop:
         pop	hl
         ld	sp, hl
         exx
-        ds      10
+        ds      6
         dec	c
         ld	d, c
         jp	z, PreDecrunchFinalize
@@ -242,7 +242,7 @@ DoFramesLoop:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;
-        ;;      Continue paused Decrunch
+        ;;      Copy sub string and jump to decrunch finalize
         ;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -256,6 +256,8 @@ CopySubStringFromDict:
 
 RestartCopySubStringFromDict:
         _CopyFromDictLoop	c                             ; 12 * N NOPS
+
+        ;       DE = src copy
         
         ld	d, b
         ld	h, c
@@ -266,11 +268,11 @@ RestartCopySubStringFromDict:
         ; We have more literal to copy than available copy slots
         ;
 CopySubLiteralChain:
-
-        _AdjustCopySizeWithRemainingSlots       (void)
+        nop
+        sub     c
         _CopyLiteralLoop	c
 
-        ld	d, b
+        ld	d, a
 
 PreDecrunchFinalize:
         ds      1
@@ -295,10 +297,10 @@ DecrunchFinalCode:
 StabilizeLoop:
         jr	z, WriteToPSG
 
-        ds      22
+        ds      21
 
         dec	ly
-        jr	StabilizeLoop           ; TODO: jr nz,SabiliteLoop (skip jr z, WriteToPSG) ---> Gagne 1 NOP sur la sortie.
+        jr	StabilizeLoop
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
