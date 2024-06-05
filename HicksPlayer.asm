@@ -1,4 +1,4 @@
-org #3000
+org #3400
 
         DECRUNCH_BUFFER_ADDR_HIGH	equ #C0
         NR_REGISTERS_TO_DECRUNCH        equ #0C
@@ -342,8 +342,8 @@ SaveDecrunchState:
 DecrunchFinalCode:
         ld	hl, (CurrentDecrunchBuffer)
         ld	h, DECRUNCH_BUFFER_ADDR_HIGH
-        ld	bc, #f402
-        ld	de, #26b6
+        ld	bc, #C402
+        ld	de, #2686
         ld	a, d
         out	(#FF), a
 
