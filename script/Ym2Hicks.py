@@ -136,14 +136,9 @@ class YmReader:
 		
 		for r in range(14):
 			Frames = b''
-			Constant = True
 			for f in range(self.NbFrames):
 				Frames = Frames + (RawData[r * self.NbFrames + f]).to_bytes(1, "little")
-				if Frames[f] != Frames[0]:
-					Constant = False
 			self.Registers[r] = bytearray(Frames)
-			if Constant:
-				print(f"Register {r} is constant ({hex(Frames[0])})")
 
 	#
 	# Some YM exports can insert zeroes in registers R11/R12/R13 when bit 4 is not set in volume control registers.
@@ -372,6 +367,27 @@ class HicksConvertor:
 				Noise[i] = Noise[i-1]				# V3 optimization
 
 	#
+	#
+	#
+	def CountConstantReg(self):
+		ConstRegTxt = ""
+		for r in range(14):
+			Constant = True
+			for f in range(len(self.YmFile.Registers[r])):
+				if self.YmFile.Registers[r][f] != self.YmFile.Registers[r][0]:
+					Constant = False
+			if Constant:
+				if ConstRegTxt == "":
+					ConstRegTxt = ConstRegTxt + f"R{r}"
+				else:
+					ConstRegTxt = ConstRegTxt + f", R{r}"
+
+		if ConstRegTxt == "":
+			ConstRegTxt = "None"
+
+		print(f"  - Constant registers:", ConstRegTxt)
+
+	#
 	# Convert the given YM file to the Hicks format
 	#
 	def Convert(self, YmFile):
@@ -387,16 +403,9 @@ class HicksConvertor:
 		self.SmoothRegisters(self.YmFile.Registers[2], self.YmFile.Registers[3], self.YmFile.Registers[9], self.YmFile.Registers[7], 2)
 		self.SmoothRegisters(self.YmFile.Registers[4], self.YmFile.Registers[5], self.YmFile.Registers[10], self.YmFile.Registers[7], 3)
 
-#		for i in range(len(self.YmFile.Registers[8])):
-#			self.YmFile.Registers[8][i] = 0
-#
-#		for i in range(len(self.YmFile.Registers[9])):
-#			self.YmFile.Registers[9][i] = 0
-#
-#		for i in range(len(self.YmFile.Registers[10])):
-#			self.YmFile.Registers[10][i] = 0
-
 		self.SmoothNoise(self.YmFile.Registers[6], self.YmFile.Registers[7])
+
+		self.CountConstantReg()
 
 		print(f"  - Merge registers 1+3")
 		self.MergeRegisters(self.YmFile.Registers[1], self.YmFile.Registers[3])
@@ -404,14 +413,6 @@ class HicksConvertor:
 		self.MergeRegisters(self.YmFile.Registers[5], self.YmFile.Registers[13])
 		print(f"  - Adjust R6 register for R13 no reset case")
 		self.AdjustR6ForR13(self.YmFile.Registers[6], self.YmFile.Registers[13])
-
-#		for r in range(12):
-#			Constant = True
-#			for f in range(len(self.YmFile.Registers[r])):
-#				if self.YmFile.Registers[r][f] != self.YmFile.Registers[r][0]:
-#					Constant = False
-#			if Constant:
-#				print(f"Register {r} is constant ({hex(self.YmFile.Registers[r][0])})")
 
 		NrRegisters = len(self.RegOrder)
 		self.Compressor.SlotLength = NrRegisters
