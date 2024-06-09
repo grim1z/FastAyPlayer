@@ -87,6 +87,30 @@ MEND
         NO_REG_SHIFT	= 0
         REG_SHIFT	= 1
 
+MACRO   WriteToPSGRegBasic	RegNumber
+        out	(c), {RegNumber}
+
+        exx
+        out	(c), 0
+        exx
+
+        out	(c), a
+        ld	a, e
+        out	(#FF), a        ; Equivalent to out &F600, %10XXXXXX
+        or	b               ; A or B --> #F6 Great :)
+        out	(#FF), a        ; Equivalent to out &F600, %11XXXXXX
+MEND
+
+MACRO   WriteToPSGRegSkip	RegNumber, SkipVal
+        ld	a, (hl)
+        cp	{SkipVal}
+        jr	z, @Skip
+
+        WriteToPSGRegBasic {RegNumber}
+@Skip:
+MEND
+
+
 MACRO   WriteToPSGReg	RegNumber, Shift
         out	(c), {RegNumber}
 
@@ -132,6 +156,9 @@ CurrentPlayerBuffer:
         ld	a, l
         inc     a
         ld	(CurrentPlayerBuffer + 1), a
+        exx
+        ld	b, #F6
+        exx
         ld	bc, #C402
         ld	de, #2686
         ld	a, d
@@ -178,48 +205,51 @@ CurrentPlayerBuffer:
         ;
         ; Write to register 13
         ;
+        ld	a, (hl)
+        rra
+        rra
+        rra
+        rra
         inc	h
         bit	7, (hl)                 ; Check if we have to program register 13.
         ld	c, 13
         jp	nz, SkipRegister13
-        dec     h        
-        WriteToPSGReg	c, REG_SHIFT
-        inc     h
-ReturnFromSkipRegister13:
+        WriteToPSGRegBasic	c
+SkipRegister13
 
         ;
         ; Write to register 6
         ;
         ld	c, 6
-        WriteToPSGReg	c, NO_REG_SHIFT
+        WriteToPSGRegSkip	c, #C4
         inc	h
 
         ;
         ; Write to register 7
         ;
-        inc     c
-        WriteToPSGReg	c, NO_REG_SHIFT
+        inc	c
+        WriteToPSGRegSkip	c, #C4
         inc     h
 
         ;
         ; Write to register 8
         ;
-        inc     c
-        WriteToPSGReg	c, NO_REG_SHIFT
+        inc	c
+        WriteToPSGRegSkip	c, #C4
         inc	h
 
         ;
         ; Write to register 9
         ;
         inc	c
-        WriteToPSGReg	c, NO_REG_SHIFT
+        WriteToPSGRegSkip	c, #C4
         inc	h
 
         ;
         ; Write to register 10
         ;
         inc	c
-        WriteToPSGReg	c, NO_REG_SHIFT
+        WriteToPSGRegSkip	c, #C4
         inc	h
         
         ;
@@ -474,16 +504,6 @@ DecrunchFinalCode:
         ;
 ReturnAddress = $+1
         jp	#0000
-
-        ;
-        ; Wait loop for constant time when register 13 is ignored.
-        ;
-SkipRegister13:
-        ld	a, #06  
-WaitLoop:
-        dec	a
-        jr	nz, WaitLoop
-        jp	ReturnFromSkipRegister13
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

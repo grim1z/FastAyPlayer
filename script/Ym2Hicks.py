@@ -338,6 +338,9 @@ class HicksConvertor:
 		VoiceToneMask = 1 << (Voice-1)
 		VoiceNoiseMask = VoiceToneMask << 3
 		for i in range (1, len(Volume)):
+			# 0 and 1 encode the same value. Smooth all 1 to 0.
+			if FreqLow[i] == 1:
+				FreqLow[i] = 0
 			CurVol = Volume[i] & 0x0F
 			PrevVol = Volume[i-1] & 0x0F
 			VolMode = Volume[i] & 0x10
@@ -367,7 +370,7 @@ class HicksConvertor:
 				Noise[i] = Noise[i-1]				# V3 optimization
 
 	#
-	#
+	# Count the number of constant registers
 	#
 	def CountConstantReg(self):
 		ConstRegTxt = ""
@@ -386,6 +389,21 @@ class HicksConvertor:
 			ConstRegTxt = "None"
 
 		print(f"  - Constant registers:", ConstRegTxt)
+
+	#
+	# Insert markers for repeating value (used to quickly avoid to program a register)
+	#
+	def PrecaclNoReprog(self, RegId, MarkerValue):
+		Register = self.YmFile.Registers[RegId]
+		PrevVal = Register[0] 
+		Count = 0
+		for r in range(1, len(Register)):
+			if (Register[r] == PrevVal):
+				Register[r] = MarkerValue
+				Count = Count + 1
+			else:
+				PrevVal = Register[r] 
+		print(f"  - Pre-calc delta-play for register {RegId}: {round(100 * Count/len(Register), 1)}%")
 
 	#
 	# Convert the given YM file to the Hicks format
@@ -413,6 +431,12 @@ class HicksConvertor:
 		self.MergeRegisters(self.YmFile.Registers[5], self.YmFile.Registers[13])
 		print(f"  - Adjust R6 register for R13 no reset case")
 		self.AdjustR6ForR13(self.YmFile.Registers[6], self.YmFile.Registers[13])
+
+		self.PrecaclNoReprog(6, 0xC4)
+		self.PrecaclNoReprog(7, 0xC4)
+		self.PrecaclNoReprog(8, 0xC4)
+		self.PrecaclNoReprog(9, 0xC4)
+		self.PrecaclNoReprog(10, 0xC4)
 
 		NrRegisters = len(self.RegOrder)
 		self.Compressor.SlotLength = NrRegisters
