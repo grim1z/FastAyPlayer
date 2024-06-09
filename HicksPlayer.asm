@@ -120,11 +120,17 @@ MEND
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 PlayerEntryPoint:
-ReLoadDecrunchSavedState equ $ + 1
+ReLoadDecrunchSavedState  equ	$ + 1
         ld	sp, DecrunchSavedState
         pop	de      ; d = restart if not null       e = Lower byte of source address if restart copy from windows. Undef otherwise.
         pop	hl      ; Current position in decrunch buffer
+        exx
+        pop	hl      ; Current position in crunched data buffer
         ld	(ReLoadDecrunchSavedState), sp
+        ld	a, h
+        res	7, h
+        ld	sp, hl          ; Load current position in decrunch buffer
+        exx
 
         ; SP = current position in decrunch source buffer
         ; HL = current position in decrunch destination buffer
@@ -139,14 +145,6 @@ ReLoadDecrunchSavedState equ $ + 1
         ;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-        ld	a, h
-        res	7, h
-        ld	sp, hl          ; Load current position in decrunch buffer
-CurrentDecrunchBuffer equ $ + 1
-CurrentDecrunchBufferLow equ $ + 1
-CurrentDecrunchBufferHigh equ $ + 2
-        ld	hl, DECRUNCH_BUFFER_ADDR_HIGH << 8
 
 NrDataToDecrunch:  equ	$ + 1
         ld	c, #00
@@ -290,6 +288,7 @@ CopySubStringFromDict:
 RestartCopySubStringFromDict:
         _CopyFromDictLoop	c                             ; 12 * N NOPS        
         ld	d, b
+        exx
         ld	h, c
 
         dec     ly
@@ -305,6 +304,7 @@ CopySubLiteralChain:
         ld	d, a
 
 DecrunchFinalize:
+        exx
         ld	h, #80
 
         ;
@@ -328,7 +328,9 @@ SaveDecrunchState:
         ld	l, c
         add	hl, sp
         ld	sp, (ReLoadDecrunchSavedState)
-        push	hl
+        push	hl      ; Save current position in crunched data buffer
+        exx
+        push	hl      ; Save current position in decrunch buffer
         push	de
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -340,8 +342,11 @@ SaveDecrunchState:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 DecrunchFinalCode:
-        ld	hl, (CurrentDecrunchBuffer)
-        ld	h, DECRUNCH_BUFFER_ADDR_HIGH
+CurrentPlayerBuffer:
+        ld	hl, DECRUNCH_BUFFER_ADDR_HIGH << 8
+        ld	a, l
+        inc     a
+        ld	(CurrentPlayerBuffer + 1), a
         ld	bc, #C402
         ld	de, #2686
         ld	a, d
@@ -450,33 +455,18 @@ endif
         ;
         ; Move to the next decrunch buffer and handle buffer loop.
         ;
-        ld	a, (CurrentDecrunchBufferHigh)
-        inc	l
-        cp	DECRUNCH_BUFFER_ADDR_HIGH + NR_REGISTERS_TO_DECRUNCH - 1
+        ld	a, (ReLoadDecrunchSavedState)
+        cp	NR_REGISTERS_TO_DECRUNCH * 6
         jr	nz, SkipBufferReset
-
-        ; Loop back to the first decrunch buffer.
-        ld	h, DECRUNCH_BUFFER_ADDR_HIGH
-        ld	(CurrentDecrunchBuffer), hl
-        ld	hl, DecrunchSavedState                  ; TODO: optimisation après avoir déplacé SavedState : reset seulement le poids faible. Gain = 3 NOPS.
-        ld	(ReLoadDecrunchSavedState), hl
-ReturnFromSkipBufferReset:
+        xor	a
+SkipBufferReset:
+        ld	(ReLoadDecrunchSavedState), a
 
         ;
         ; Return to the calling code.
         ;
 ReturnAddress = $+1
         jp	#0000
-
-        ;
-        ; Wait loop for constant time if there is no need to reset decrunch buffers
-        ;
-SkipBufferReset:
-        ds	4
-        ld	h, a
-        inc	h
-        ld	(CurrentDecrunchBuffer), hl
-        jr	ReturnFromSkipBufferReset
 
         ;
         ; Wait loop for constant time when register 13 is ignored.
@@ -537,11 +527,20 @@ ConstantRegOver:
         ld	de, DecrunchSavedState
         ld	b, NR_REGISTERS_TO_DECRUNCH
         xor	a
+        exa
+        ld	a, DECRUNCH_BUFFER_ADDR_HIGH
+        exa
 
 InitDecrunchStateLoop:
         inc	de
         ld	(de), a
         inc	de
+        inc	de
+        exa
+        ld	(de), a
+        inc     a
+        exa
+        inc     de
         ldi                     ; Copy register crunched data address
         ldi
         djnz	InitDecrunchStateLoop
@@ -564,22 +563,17 @@ InitDecrunchStateLoop:
         ;
         ld	a, #01
         ld	(NrDataToDecrunch), a
-        ld	hl, (DECRUNCH_BUFFER_ADDR_HIGH + 1) << 8
-        ld	(CurrentDecrunchBuffer), hl
         ld	hl, DecrunchSavedStateReg1
         ld	(ReLoadDecrunchSavedState), hl
         ld	b, #0b
 InitDecrunchBufferLoop:
         push	bc
-        ld	(SaveStack), sp        
+        ld	(SaveStack), sp
         jp	PlayerEntryPoint
 SaveStack equ $ + 1
 ReturnFromDecrunchCodeToInitCode:
         ld	sp, #0000
         pop	bc
-        ld	a, (CurrentDecrunchBufferHigh)
-        inc	a
-        ld	(CurrentDecrunchBufferHigh), a
         ld	a, (NrDataToDecrunch)
         inc	a
         ld	(NrDataToDecrunch), a
@@ -587,8 +581,6 @@ ReturnFromDecrunchCodeToInitCode:
 
         ld	a, NR_REGISTERS_TO_DECRUNCH
         ld	(NrDataToDecrunch), a
-        ld	hl, DECRUNCH_BUFFER_ADDR_HIGH << 8
-        ld	(CurrentDecrunchBuffer), hl
         ld	hl, DecrunchSavedState
         ld	(ReLoadDecrunchSavedState), hl
 
@@ -654,10 +646,11 @@ ConstantRegisters:              ; Init data
         db	13, 0
 
 ; TODO: Réutiliser l'espace du header de format auquel on ajoute un peu d'espace pour compléter.
+align   256
 DecrunchSavedState:
-        ds      4
+        ds      6
 DecrunchSavedStateReg1:
-        ds	44
+        ds	66
 
 CodeBackup:                   ; Init data
         ds	3
