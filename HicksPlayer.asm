@@ -119,7 +119,143 @@ MEND
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-PlayerEntryPoint:
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;;
+        ;;       AY programming
+        ;;
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+CurrentPlayerBuffer:
+        ld	hl, DECRUNCH_BUFFER_ADDR_HIGH << 8
+        ld	a, l
+        inc     a
+        ld	(CurrentPlayerBuffer + 1), a
+        ld	bc, #C402
+        ld	de, #2686
+        ld	a, d
+        out	(#FF), a
+
+        ;
+        ; Write to register 0
+        ;
+        WriteToPSGReg	0, NO_REG_SHIFT
+        inc	h
+
+        ;
+        ; Write to register 2
+        ;
+        WriteToPSGReg	c, NO_REG_SHIFT
+        inc	h
+
+        ;
+        ; Write to register 1
+        ;
+        dec     c
+        WriteToPSGReg	c, NO_REG_SHIFT
+
+        ;
+        ; Write to register 3
+        ;
+        ld	c, 3
+        WriteToPSGReg	c, REG_SHIFT
+        inc	h
+
+        ;
+        ; Write to register 4
+        ;
+        inc	c
+        WriteToPSGReg	c, NO_REG_SHIFT
+        inc	h
+
+        ;
+        ; Write to register 5
+        ;
+        inc     c
+        WriteToPSGReg	c, NO_REG_SHIFT
+
+        ;
+        ; Write to register 13
+        ;
+        inc	h
+        bit	7, (hl)                 ; Check if we have to program register 13.
+        ld	c, 13
+        jp	nz, SkipRegister13
+        dec     h        
+        WriteToPSGReg	c, REG_SHIFT
+        inc     h
+ReturnFromSkipRegister13:
+
+        ;
+        ; Write to register 6
+        ;
+        ld	c, 6
+        WriteToPSGReg	c, NO_REG_SHIFT
+        inc	h
+
+        ;
+        ; Write to register 7
+        ;
+        inc     c
+        WriteToPSGReg	c, NO_REG_SHIFT
+        inc     h
+
+        ;
+        ; Write to register 8
+        ;
+        inc     c
+        WriteToPSGReg	c, NO_REG_SHIFT
+        inc	h
+
+        ;
+        ; Write to register 9
+        ;
+        inc	c
+        WriteToPSGReg	c, NO_REG_SHIFT
+        inc	h
+
+        ;
+        ; Write to register 10
+        ;
+        inc	c
+        WriteToPSGReg	c, NO_REG_SHIFT
+        inc	h
+        
+        ;
+        ; Write to register 11
+        ;
+        inc	c
+        WriteToPSGReg	c, NO_REG_SHIFT
+        inc	h
+
+if      SKIP_R12!=1
+        ;
+        ; Write to register 12
+        ;
+        inc	c
+        WriteToPSGReg	c, NO_REG_SHIFT
+endif
+
+        ;
+        ; Move to the next decrunch buffer and handle buffer loop.
+        ;
+        ld	a, (ReLoadDecrunchSavedState)
+        cp	NR_REGISTERS_TO_DECRUNCH * 6
+        jr	nz, SkipBufferReset
+        xor	a
+SkipBufferReset:
+        ld	(ReLoadDecrunchSavedState), a
+
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;;
+        ;;      Decrunch buffers start
+        ;;
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+DecrunchEntryPoint:
 ReLoadDecrunchSavedState  equ	$ + 1
         ld	sp, DecrunchSavedState
         pop	de      ; d = restart if not null       e = Lower byte of source address if restart copy from windows. Undef otherwise.
@@ -146,8 +282,7 @@ ReLoadDecrunchSavedState  equ	$ + 1
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-NrDataToDecrunch:  equ	$ + 1
-        ld	c, #00
+        ld	c, NR_REGISTERS_TO_DECRUNCH
         ld	ly, #05
         inc	d
         dec	d
@@ -332,135 +467,7 @@ SaveDecrunchState:
         exx
         push	hl      ; Save current position in decrunch buffer
         push	de
-
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        ;;
-        ;;       AY programming
-        ;;
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 DecrunchFinalCode:
-CurrentPlayerBuffer:
-        ld	hl, DECRUNCH_BUFFER_ADDR_HIGH << 8
-        ld	a, l
-        inc     a
-        ld	(CurrentPlayerBuffer + 1), a
-        ld	bc, #C402
-        ld	de, #2686
-        ld	a, d
-        out	(#FF), a
-
-        ;
-        ; Write to register 0
-        ;
-        WriteToPSGReg	0, NO_REG_SHIFT
-        inc	h
-
-        ;
-        ; Write to register 2
-        ;
-        WriteToPSGReg	c, NO_REG_SHIFT
-        inc	h
-
-        ;
-        ; Write to register 1
-        ;
-        dec     c
-        WriteToPSGReg	c, NO_REG_SHIFT
-
-        ;
-        ; Write to register 3
-        ;
-        ld	c, 3
-        WriteToPSGReg	c, REG_SHIFT
-        inc	h
-
-        ;
-        ; Write to register 4
-        ;
-        inc	c
-        WriteToPSGReg	c, NO_REG_SHIFT
-        inc	h
-
-        ;
-        ; Write to register 5
-        ;
-        inc     c
-        WriteToPSGReg	c, NO_REG_SHIFT
-
-        ;
-        ; Write to register 13
-        ;
-        inc	h
-        bit	7, (hl)                 ; Check if we have to program register 13.
-        ld	c, 13
-        jp	nz, SkipRegister13
-        dec     h        
-        WriteToPSGReg	c, REG_SHIFT
-        inc     h
-ReturnFromSkipRegister13:
-
-        ;
-        ; Write to register 6
-        ;
-        ld	c, 6
-        WriteToPSGReg	c, NO_REG_SHIFT
-        inc	h
-
-        ;
-        ; Write to register 7
-        ;
-        inc     c
-        WriteToPSGReg	c, NO_REG_SHIFT
-        inc     h
-
-        ;
-        ; Write to register 8
-        ;
-        inc     c
-        WriteToPSGReg	c, NO_REG_SHIFT
-        inc	h
-
-        ;
-        ; Write to register 9
-        ;
-        inc	c
-        WriteToPSGReg	c, NO_REG_SHIFT
-        inc	h
-
-        ;
-        ; Write to register 10
-        ;
-        inc	c
-        WriteToPSGReg	c, NO_REG_SHIFT
-        inc	h
-        
-        ;
-        ; Write to register 11
-        ;
-        inc	c
-        WriteToPSGReg	c, NO_REG_SHIFT
-        inc	h
-
-if      SKIP_R12!=1
-        ;
-        ; Write to register 12
-        ;
-        inc	c
-        WriteToPSGReg	c, NO_REG_SHIFT
-endif
-
-        ;
-        ; Move to the next decrunch buffer and handle buffer loop.
-        ;
-        ld	a, (ReLoadDecrunchSavedState)
-        cp	NR_REGISTERS_TO_DECRUNCH * 6
-        jr	nz, SkipBufferReset
-        xor	a
-SkipBufferReset:
-        ld	(ReLoadDecrunchSavedState), a
 
         ;
         ; Return to the calling code.
@@ -561,26 +568,19 @@ InitDecrunchStateLoop:
         ;
         ; Loop to initialize decrunch buffers with 1, 2, 3,..., N values
         ;
-        ld	a, #01
-        ld	(NrDataToDecrunch), a
-        ld	hl, DecrunchSavedStateReg1
+        ld	hl, DecrunchSavedState
         ld	(ReLoadDecrunchSavedState), hl
-        ld	b, #0b
+        ld	b, NR_REGISTERS_TO_DECRUNCH
 InitDecrunchBufferLoop:
         push	bc
         ld	(SaveStack), sp
-        jp	PlayerEntryPoint
+        jp	DecrunchEntryPoint
 SaveStack equ $ + 1
 ReturnFromDecrunchCodeToInitCode:
         ld	sp, #0000
         pop	bc
-        ld	a, (NrDataToDecrunch)
-        inc	a
-        ld	(NrDataToDecrunch), a
         djnz	InitDecrunchBufferLoop
 
-        ld	a, NR_REGISTERS_TO_DECRUNCH
-        ld	(NrDataToDecrunch), a
         ld	hl, DecrunchSavedState
         ld	(ReLoadDecrunchSavedState), hl
 
