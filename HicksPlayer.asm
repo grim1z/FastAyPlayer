@@ -161,19 +161,17 @@ CurrentPlayerBuffer:
         exx
         ld	bc, #C402
         ld	de, #2686
-        ld	a, d
-        out	(#FF), a
 
         ;
         ; Write to register 0
         ;
-        WriteToPSGReg	0, NO_REG_SHIFT
+        WriteToPSGRegSkip	0, #01
         inc	h
 
         ;
         ; Write to register 2
         ;
-        WriteToPSGReg	c, NO_REG_SHIFT
+        WriteToPSGRegSkip	c, #01
         inc	h
 
         ;
@@ -193,7 +191,7 @@ CurrentPlayerBuffer:
         ; Write to register 4
         ;
         inc	c
-        WriteToPSGReg	c, NO_REG_SHIFT
+        WriteToPSGRegSkip	c, #01
         inc	h
 
         ;
@@ -256,7 +254,7 @@ SkipRegister13
         ; Write to register 11
         ;
         inc	c
-        WriteToPSGReg	c, NO_REG_SHIFT
+        WriteToPSGRegSkip	c, #01
         inc	h
 
 if      SKIP_R12!=1

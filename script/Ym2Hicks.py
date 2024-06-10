@@ -334,30 +334,36 @@ class HicksConvertor:
 				R7[i] = R7[i] | 0x80
 				R13[i] = R13[i-1]				# V2 optimisation
 
-	def SmoothRegisters(self, FreqLow, FreqHigh, Volume, Mixer, Voice):
+	def SmoothRegisters(self, PeriodLow, PeriodHigh, Volume, Mixer, Voice):
 		VoiceToneMask = 1 << (Voice-1)
 		VoiceNoiseMask = VoiceToneMask << 3
 		for i in range (1, len(Volume)):
-			# 0 and 1 encode the same value. Smooth all 1 to 0.
-			if FreqLow[i] == 1:
-				FreqLow[i] = 0
 			CurVol = Volume[i] & 0x0F
 			PrevVol = Volume[i-1] & 0x0F
 			VolMode = Volume[i] & 0x10
 			ToneOff = (Mixer[i] & VoiceToneMask) == VoiceToneMask
 			NoiseOff = (Mixer[i] & VoiceNoiseMask) == VoiceNoiseMask
 
-			# Smooth Frequency if volume is 0 or tone if off.
+			# Smooth Period if volume is 0 or tone if off.
 			if Volume[i] == 0 or ToneOff:
-				if FreqLow[i] != FreqLow[i-1]:
-					FreqLow[i] = FreqLow[i-1]		# V5 optimisation
-				if FreqHigh[i] != FreqHigh[i-1]:
-					FreqHigh[i] = FreqHigh[i-1]
+				if PeriodLow[i] != PeriodLow[i-1]:
+					PeriodLow[i] = PeriodLow[i-1]		# V5 optimisation
+				if PeriodHigh[i] != PeriodHigh[i-1]:
+					PeriodHigh[i] = PeriodHigh[i-1]
 
 			# Smooth volume if tone is off
 			# In this case, volume is not used by the PSG.
 			if ToneOff and Volume[i] != Volume[i-1]:
 				Volume[i] = VolMode | PrevVol			# V4 optimization
+
+	#
+	# Switch all 1 to 0 for period low byte. The 1 value will later be use to mark a "delta-play".
+	#
+	def FixPeriodLow(self, PeriodLow):
+		for i in range (0, len(PeriodLow)):
+			# 0 and 1 encode the same value. Smooth all 1 to 0.
+			if PeriodLow[i] == 1:
+				PeriodLow[i] = 0
 
 	#
 	# Smooth noise register when noise is off on every channels
@@ -421,6 +427,11 @@ class HicksConvertor:
 		self.SmoothRegisters(self.YmFile.Registers[2], self.YmFile.Registers[3], self.YmFile.Registers[9], self.YmFile.Registers[7], 2)
 		self.SmoothRegisters(self.YmFile.Registers[4], self.YmFile.Registers[5], self.YmFile.Registers[10], self.YmFile.Registers[7], 3)
 
+		self.FixPeriodLow(self.YmFile.Registers[0])
+		self.FixPeriodLow(self.YmFile.Registers[2])
+		self.FixPeriodLow(self.YmFile.Registers[4])
+		self.FixPeriodLow(self.YmFile.Registers[11])
+
 		self.SmoothNoise(self.YmFile.Registers[6], self.YmFile.Registers[7])
 
 		self.CountConstantReg()
@@ -432,11 +443,15 @@ class HicksConvertor:
 		print(f"  - Adjust R6 register for R13 no reset case")
 		self.AdjustR6ForR13(self.YmFile.Registers[6], self.YmFile.Registers[13])
 
+		self.PrecaclNoReprog(0, 0x01)
+		self.PrecaclNoReprog(2, 0x01)
+		self.PrecaclNoReprog(4, 0x01)
 		self.PrecaclNoReprog(6, 0xC4)
 		self.PrecaclNoReprog(7, 0xC4)
 		self.PrecaclNoReprog(8, 0xC4)
 		self.PrecaclNoReprog(9, 0xC4)
 		self.PrecaclNoReprog(10, 0xC4)
+		self.PrecaclNoReprog(11, 0x01)
 
 		NrRegisters = len(self.RegOrder)
 		self.Compressor.SlotLength = NrRegisters
