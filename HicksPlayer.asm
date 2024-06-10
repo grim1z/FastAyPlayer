@@ -87,7 +87,7 @@ MEND
         NO_REG_SHIFT	= 0
         REG_SHIFT	= 1
 
-MACRO   WriteToPSGRegBasic	RegNumber
+MACRO   WriteToPSGReg	RegNumber
         out	(c), {RegNumber}
 
         exx
@@ -95,10 +95,11 @@ MACRO   WriteToPSGRegBasic	RegNumber
         exx
 
         out	(c), a
-        ld	a, e
-        out	(#FF), a        ; Equivalent to out &F600, %10XXXXXX
-        or	b               ; A or B --> #F6 Great :)
-        out	(#FF), a        ; Equivalent to out &F600, %11XXXXXX
+
+        exx
+        out	(c), l
+        out	(c), h
+        exx
 MEND
 
 MACRO   WriteToPSGRegSkip	RegNumber, SkipVal
@@ -106,31 +107,8 @@ MACRO   WriteToPSGRegSkip	RegNumber, SkipVal
         cp	{SkipVal}
         jr	z, @Skip
 
-        WriteToPSGRegBasic {RegNumber}
+        WriteToPSGReg {RegNumber}
 @Skip:
-MEND
-
-
-MACRO   WriteToPSGReg	RegNumber, Shift
-        out	(c), {RegNumber}
-
-        ld	a, d
-        out	(#FF), a        ; Equivalent to out &F600, %00XXXXXX
-
-        ld	a, (hl)
-
-if {Shift}==REG_SHIFT
-        rra
-        rra
-        rra
-        rra
-endif
-
-        out	(c), a
-        ld	a, e
-        out	(#FF), a        ; Equivalent to out &F600, %10XXXXXX
-        or	b               ; A or B --> #F6 Great :)
-        out	(#FF), a        ; Equivalent to out &F600, %11XXXXXX
 MEND
 
         jp	PlayerInit
@@ -158,52 +136,67 @@ CurrentPlayerBuffer:
         ld	(CurrentPlayerBuffer + 1), a
         exx
         ld	b, #F6
+        ld	hl, #c080
         exx
-        ld	bc, #C402
-        ld	de, #2686
+        ld	bc, #F402
+        ld	de, #0301
 
         ;
         ; Write to register 0
         ;
-        WriteToPSGRegSkip	0, #01
+        WriteToPSGRegSkip	0, e
         inc	h
 
         ;
         ; Write to register 2
         ;
-        WriteToPSGRegSkip	c, #01
+        WriteToPSGRegSkip       c, e
         inc	h
 
         ;
         ; Write to register 1
         ;
-        dec     c
-        WriteToPSGReg	c, NO_REG_SHIFT
+        dec	c
+        ld	a, (hl)
+        dec     l
+        cp	(hl)
+        jr	z, SkipR1_3
+        WriteToPSGReg   c
 
         ;
         ; Write to register 3
         ;
-        ld	c, 3
-        WriteToPSGReg	c, REG_SHIFT
+        rra
+        rra
+        rra
+        rra
+        WriteToPSGReg	d
+SkipR1_3:
+        inc     l
         inc	h
 
         ;
         ; Write to register 4
         ;
-        inc	c
-        WriteToPSGRegSkip	c, #01
+        inc	d
+        WriteToPSGRegSkip	d, e
         inc	h
 
         ;
         ; Write to register 5
         ;
-        inc     c
-        WriteToPSGReg	c, NO_REG_SHIFT
+        inc     d
+        ld	a, (hl)
+        dec	l
+        cp	(hl)
+        jr	z, SkipR5
+        WriteToPSGReg	d
+SkipR5:
+        inc     l
 
         ;
         ; Write to register 13
         ;
-        ld	a, (hl)
         rra
         rra
         rra
@@ -212,57 +205,58 @@ CurrentPlayerBuffer:
         bit	7, (hl)                 ; Check if we have to program register 13.
         ld	c, 13
         jp	nz, SkipRegister13
-        WriteToPSGRegBasic	c
+        WriteToPSGReg	c
 SkipRegister13
 
         ;
         ; Write to register 6
         ;
-        ld	c, 6
-        WriteToPSGRegSkip	c, #C4
+        inc     d
+        WriteToPSGRegSkip	d, b
         inc	h
 
         ;
         ; Write to register 7
         ;
-        inc	c
-        WriteToPSGRegSkip	c, #C4
+        inc	d
+        WriteToPSGRegSkip	d, b
         inc     h
 
         ;
         ; Write to register 8
         ;
-        inc	c
-        WriteToPSGRegSkip	c, #C4
+        inc	d
+        WriteToPSGRegSkip	d, b
         inc	h
 
         ;
         ; Write to register 9
         ;
-        inc	c
-        WriteToPSGRegSkip	c, #C4
+        inc	d
+        WriteToPSGRegSkip	d, b
         inc	h
 
         ;
         ; Write to register 10
         ;
-        inc	c
-        WriteToPSGRegSkip	c, #C4
+        inc	d
+        WriteToPSGRegSkip	d, b
         inc	h
         
         ;
         ; Write to register 11
         ;
-        inc	c
-        WriteToPSGRegSkip	c, #01
+        inc	d
+        WriteToPSGRegSkip	d, e
         inc	h
 
 if      SKIP_R12!=1
         ;
         ; Write to register 12
         ;
-        inc	c
-        WriteToPSGReg	c, NO_REG_SHIFT
+        inc	d
+        ld	a, (hl)
+        WriteToPSGReg   d
 endif
 
         ;
