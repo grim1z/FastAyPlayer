@@ -66,11 +66,12 @@ MEND
 start_code
 
       ld	hl, #C9FB
-      ld	( #38), hl
+      ld	(#38), hl
              
       ld	bc, #7FC0
       out	(c), c
-                 
+
+      ld	sp, #2F00
 
       di
       ini_play	ExecPlayReturn
@@ -131,22 +132,23 @@ if    _HicksPlayer
 
 ;      org	adr_ayc: incbin "results/v5/Short-Loop0.ayc"
 ;      org	adr_ayc: incbin "results/v5/Solarium.ayc"                         ; 0:51      - Const: 12
-;      org	adr_ayc: incbin "results/v5/From_Scratch-Part1.ayc"               ; 1:08      - Const: 12
+      org	adr_ayc: incbin "results/v5/From_Scratch-Part1.ayc"               ; 1:08      - Const: 12
 ;      org	adr_ayc: incbin "results/v5/Boblines.ayc"                         ; 1:17      - Const: 12
-	org	adr_ayc: incbin "results/v5/Hocus_Pocus.ayc"                      ; 2:21      - Const: -
+;	org	adr_ayc: incbin "results/v5/Hocus_Pocus.ayc"                      ; 2:21      - Const: -
 ;      org	adr_ayc: incbin "results/v5/cybernoid.ayc"                        ; 2:21      - Const: 5, 11, 12, 13
 ;      org	adr_ayc: incbin "results/v5/Fractal.ayc"                          ; 3:33      - Const: 12
 ;      org	adr_ayc: incbin "results/v5/Orion_Prime-Introduction.ayc"         ; 3:47      - Const: 12
 ;      org	adr_ayc: incbin "results/v5/Midline_Process-Carpet.ayc"           ; 5:22      - Const: 12
 ;      org	adr_ayc: incbin "results/v5/Sudoku_Theme1.ayc"                    ; 7:17      - Const: 12
 ;      org	adr_ayc: incbin "results/v5/Renegade.ayc"                         ; 9:38      - Const: 12
+;      org	adr_ayc: incbin "results/v5/Wireshar.ayc"
 
 ;      org	adr_ayc: incbin "resources/Cybernoid.ayc"
 ;     org	adr_ayc: incbin "resources/hicks-ayc/Hocus-Hicks.ayc"
 
       print	"Data size:", $-adr_ayc
 
-      save    "player.bin", #4000, #4200, DSK, 'Hicks.dsk'
+      save    "player.bin", #3000, #5000, DSK, 'Player.dsk'
 else
 
       org	#3000

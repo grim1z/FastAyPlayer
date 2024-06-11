@@ -9,9 +9,9 @@ all: $(TARGET)
 $(TARGET): $(ASM_SRC)
 	mkdir -p out
 ifdef WSL_DISTRO_NAME
-	cmd.exe /c "D:\Dropbox\RetroGaming\CPC\rasm.exe -v -void -twe -xr -sb -ss -sa Main.asm -oi $(TARGET)"
+	cmd.exe /c "D:\Dropbox\RetroGaming\CPC\rasm.exe -v -void -twe -xr -sb -ss -eo -sa Main.asm -oi $(TARGET)"
 else
-	rasm -d -v -void -twe -xr -sb -ss -sa Main.asm -oi $(TARGET)
+	rasm -d -v -void -twe -xr -sb -eo -ss -sa Main.asm -oi $(TARGET)
 endif
 
 clean:
@@ -22,6 +22,13 @@ ifdef WSL_DISTRO_NAME
 	cmd.exe /c "D:\Dropbox\RetroGaming\CPC\AceDL\AceDL.exe -crtc 1 -ffr $(TARGET)"
 else
 	$(ACE) -crtc 1 -ffr $(TARGET)
+endif
+
+dsk:
+ifdef WSL_DISTRO_NAME
+	cmd.exe /c "D:\Dropbox\RetroGaming\CPC\AceDL\AceDL.exe -crtc 1 -ffr Player.dsk"
+else
+	$(ACE) -crtc 1 -ffr Player.dsk
 endif
 
 ym:
@@ -35,6 +42,7 @@ ym:
 	./script/Ym2Hicks.py resources/src-ym/Fractal.ym results/v5/Fractal.ayc
 	./script/Ym2Hicks.py resources/src-ym/Renegade.ym results/v5/Renegade.ayc
 	./script/Ym2Hicks.py resources/src-ym/Solarium.ym results/v5/Solarium.ayc
+	./script/Ym2Hicks.py resources/src-ym/Wireshar.ym results/v5/Wireshar.ayc
 
 #        ./script/Ym2Hicks.py resources/src-ym/Short-Loop0.ym results/v5/Short-Loop0.ayc
 #        ./script/Ym2Hicks.py resources/src-ym/Short-Loop1.ym results/v5/Short-Loop1.ayc

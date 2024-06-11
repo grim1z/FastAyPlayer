@@ -668,5 +668,3 @@ CodeBackup:                   ; Init data
         ds	3
 JumpToInitCode:               ; Init data
         jp	ReturnFromDecrunchCodeToInitCode
-
-        save"Player.bin",	#4000, $ - #4000
