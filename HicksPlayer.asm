@@ -445,8 +445,7 @@ CopySubStringFromDict:
 RestartCopySubStringFromDict:
         _CopyFromDictLoop	c                             ; 12 * N NOPS        
         ld	d, b
-        exx
-        ld	h, c
+        ld	a, c
 
         dec     ly
         jr	z, SaveDecrunchState
@@ -461,8 +460,7 @@ CopySubLiteralChain:
         ld	d, a
 
 DecrunchFinalize:
-        exx
-        ld	h, #80
+        ld	a, #80
 
         ;
         ; Decrunch stabilization loop
@@ -482,7 +480,9 @@ EnterStabilizeLoop:
         ; Write back to memory the current decrunch state.
         ;
 SaveDecrunchState:
-        ld	l, c
+        exx
+        ld	h, a
+        ld	l, 0
         add	hl, sp
         ld	sp, (ReLoadDecrunchSavedState)
         push	hl      ; Save current position in crunched data buffer
@@ -660,9 +660,7 @@ ConstantRegisters:              ; Init data
 ; TODO: Réutiliser l'espace du header de format auquel on ajoute un peu d'espace pour compléter.
 align   256
 DecrunchSavedState:
-        ds      6
-DecrunchSavedStateReg1:
-        ds	66
+        ds	72
 
 CodeBackup:                   ; Init data
         ds	3
