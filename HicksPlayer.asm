@@ -1,7 +1,8 @@
-org #3400
+org #3300
 
         DECRUNCH_BUFFER_ADDR_HIGH	equ #C0
         NR_REGISTERS_TO_DECRUNCH        equ #0C
+        NR_REGISTERS_TO_PLAY	equ NR_REGISTERS_TO_DECRUNCH + 2
 
         RESTART_COPY_FROM_DICT_MARKER   equ     0
         RESTART_COPY_LITERAL_MARKER	equ     1
@@ -87,10 +88,11 @@ MEND
         NO_REG_SHIFT	= 0
         REG_SHIFT	= 1
 
-MACRO   WriteToPSGReg	RegNumber
+MACRO   WriteToPSGReg	RegNumber       ; 25 NOPS
         out	(c), {RegNumber}
 
         exx
+        dec	c              ; Dec number of registers to play
         out	(c), 0
         exx
 
@@ -135,7 +137,7 @@ CurrentPlayerBuffer:
         inc     a
         ld	(CurrentPlayerBuffer + 1), a
         exx
-        ld	b, #F6
+        ld	bc, #F600 + NR_REGISTERS_TO_PLAY + 1
         ld	hl, #c080
         exx
         ld	bc, #F402
@@ -160,7 +162,7 @@ CurrentPlayerBuffer:
         ld	a, (hl)
         dec     l
         cp	(hl)
-        jr	z, SkipR1_3
+        jp	z, SkipR1_3
         WriteToPSGReg   c
 
         ;
@@ -171,7 +173,7 @@ CurrentPlayerBuffer:
         rra
         rra
         WriteToPSGReg	d
-SkipR1_3:
+SkipR1_3Return:
         inc     l
         inc	h
 
@@ -204,7 +206,7 @@ SkipR5:
         inc	h
         bit	7, (hl)                 ; Check if we have to program register 13.
         ld	c, 13
-        jp	nz, SkipRegister13
+        jr	nz, SkipRegister13
         WriteToPSGReg	c
 SkipRegister13
 
@@ -268,6 +270,15 @@ endif
         xor	a
 SkipBufferReset:
         ld	(ReLoadDecrunchSavedState), a
+
+        exx
+DoneLoop:
+        dec	c
+        jr	z, DoneXX
+        ds	18
+        jr      DoneLoop
+DoneXX:
+        exx
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -496,6 +507,10 @@ DecrunchFinalCode:
         ;
 ReturnAddress = $+1
         jp	#0000
+
+SkipR1_3:
+        ds      3
+        jp      SkipR1_3Return
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

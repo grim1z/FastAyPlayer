@@ -10,7 +10,7 @@
       ORG	#3000      
       RUN	$
 
-      adr_play	equ #3400        ; code player (<&400)
+      adr_play	equ #3300        ; code player (<&400)
       buf_ayc	equ #C000        ; buffers decrunch (&e00 max)
       adr_ayc	equ #3800
 
