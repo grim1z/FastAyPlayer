@@ -262,22 +262,15 @@ if      SKIP_R12!=1
 endif
 
         ;
-        ; Move to the next decrunch buffer and handle buffer loop.
+        ; Stabilize loop
         ;
-        ld	a, (ReLoadDecrunchSavedState)
-        cp	NR_REGISTERS_TO_DECRUNCH * 6
-        jr	nz, SkipBufferReset
-        xor	a
-SkipBufferReset:
-        ld	(ReLoadDecrunchSavedState), a
-
         exx
-DoneLoop:
+RegStabilizeLoop:
         dec	c
-        jr	z, DoneXX
+        jr	z, RegStabilizeLoopExit
         ds	18
-        jr      DoneLoop
-DoneXX:
+        jr      RegStabilizeLoop
+RegStabilizeLoopExit:
         exx
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -287,6 +280,16 @@ DoneXX:
         ;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+        ;
+        ; Move to the next decrunch buffer and handle buffer loop.
+        ;
+        ld	a, (ReLoadDecrunchSavedState)
+        cp	NR_REGISTERS_TO_DECRUNCH * 6
+        jr	nz, SkipBufferReset
+        xor	a
+SkipBufferReset:
+        ld	(ReLoadDecrunchSavedState), a
 
 DecrunchEntryPoint:
 ReLoadDecrunchSavedState  equ	$ + 1
@@ -527,37 +530,34 @@ SkipR1_3:
 PlayerInit:
         ld	(ReturnAddress), ix
 
-        ld	e, (hl)         ; Read number of frames.
-        inc	hl
-        ld	d, (hl)
-        inc	hl
-;        ld	(FrameCounter), de      ; Write number of frames        - TODO: Supprimer le frame counter du fichier ?????
-;        ld	(FrameCounterReset), de ;
-        ex	de, hl
-        ld	a, (de)         ; Read number of constant registers
-        inc	de
-
-NextConstantReg:
-        or	a
-        jr	z, ConstantRegOver
-        push	af
-        ld	a, (de)
-        inc	de
-        add	a
+        ;
+        ; Initialize registers
+        ;
+        xor     a
+        ld	b, #f4
+        exx
+        ld	b, #f6
+        ld	hl, #c080
+        exx        
+InitRegisterLoop:               ; TODO: pourquoi ne pas utiliser la macro WriteToPsgReg ? Juste pour la lisibilité.
+        out	(c), a          ; #F4 = Reg number
+        exx
+        out	(c), h          ; #F6 = #C0
+        out	(c), 0          ; #F6 = #00
+        exx
+        inc	b
+        outi                    ; #F4 = Reg Value
+        exx
+        out	(c), l          ; #F6 = #80
+        out	(c), 0          ; #F6 = #00
+        exx
         inc	a
-        ld	b, #00
-        ld	c, a
-        ld	hl, ConstantRegisters
-        add	hl, bc
-        ld	a, (de)
-        inc	de
-        ld	(hl), a
-        pop	af
-        dec	a
-        jr	NextConstantReg
+        cp      14
+        jr	nz, InitRegisterLoop
 
-ConstantRegOver:
-        ex	de, hl
+        ;
+        ; Initialize decrunch save state array.
+        ;
         ld	de, DecrunchSavedState
         ld	b, NR_REGISTERS_TO_DECRUNCH
         xor	a
@@ -619,31 +619,6 @@ ReturnFromDecrunchCodeToInitCode:
         ld	bc, #0003
         ldir
 
-        ;
-        ; Initialize registers
-        ;
-        ld	hl, ConstantRegisters
-        ld	a, #0e
-        ld	b, #f4
-        exx
-        ld	b, #f6
-        ld	hl, #c080
-        exx        
-InitRegisterLoop:               ; TODO: pourquoi ne pas utiliser la macro WriteToPsgReg ? Juste pour la lisibilité.
-        inc	b
-        outi                    ; #F4 = Reg number
-        exx
-        out	(c), h          ; #F6 = #C0
-        out	(c), 0          ; #F6 = #00
-        exx
-        inc	b
-        outi                    ; #F4 = Reg Value
-        exx
-        out	(c), l          ; #F6 = #80
-        out	(c), 0          ; #F6 = #00
-        exx
-        dec	a
-        jr	nz, InitRegisterLoop
         ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -654,24 +629,6 @@ InitRegisterLoop:               ; TODO: pourquoi ne pas utiliser la macro WriteT
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: regouper init data ensemble et les mette dans la section ".init"
-
-ConstantRegisters:              ; Init data
-        db	0, 0
-        db      1, 0
-        db      2, 0
-        db	3, 0
-        db	4, 0
-        db	5, 0
-        db	6, 0
-        db	7, #3F
-        db	8, 0
-        db	9, 0
-        db	10, 0
-        db	11, 0
-        db	12, 0
-        db	13, 0
-
 ; TODO: Réutiliser l'espace du header de format auquel on ajoute un peu d'espace pour compléter.
 align   256
 DecrunchSavedState:
@@ -680,4 +637,4 @@ DecrunchSavedState:
 CodeBackup:                   ; Init data
         ds	3
 JumpToInitCode:               ; Init data
-        jp	ReturnFromDecrunchCodeToInitCode
+        jp	ReturnFromDecrunchCodeToInitCode ; TODO: utiliser le JP du DecrunchFinalCode pour simplifier le code

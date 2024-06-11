@@ -5,6 +5,8 @@ import sys
 import struct
 import lhafile
 
+NR_YM_REGISTERS = 14
+
 ###################################################################################
 #
 # Helper functions
@@ -110,7 +112,7 @@ class YmReader:
 	#
 	# Import YM header
 	#
-	def	LoadSongInfo(self):
+	def LoadSongInfo(self):
 		self.SongName = ReadString(self.fd)
 		self.Author = ReadString(self.fd)
 		self.Comment = ReadString(self.fd)
@@ -123,7 +125,7 @@ class YmReader:
 	#
 	# Load frames as a 2D array indexed as [Register #] [Frame #]
 	#
-	def	LoadInterleavedFrames(self):
+	def LoadInterleavedFrames(self):
 		RawData = self.fd.read(self.NrRegisters * self.NbFrames)
 
 		Magic = self.fd.read(4)
@@ -133,8 +135,7 @@ class YmReader:
 			raise Exception(f"Truncated or malformed file.")
 
 		self.Registers = {}
-		
-		for r in range(14):
+		for r in range(NR_YM_REGISTERS):
 			Frames = b''
 			for f in range(self.NbFrames):
 				Frames = Frames + (RawData[r * self.NbFrames + f]).to_bytes(1, "little")
@@ -380,7 +381,7 @@ class HicksConvertor:
 	#
 	def CountConstantReg(self):
 		ConstRegTxt = ""
-		for r in range(14):
+		for r in range(NR_YM_REGISTERS):
 			Constant = True
 			for f in range(len(self.YmFile.Registers[r])):
 				if self.YmFile.Registers[r][f] != self.YmFile.Registers[r][0]:
@@ -401,9 +402,9 @@ class HicksConvertor:
 	#
 	def PrecaclNoReprog(self, RegId, MarkerValue):
 		Register = self.YmFile.Registers[RegId]
-		PrevVal = Register[0] 
+		PrevVal = Register[len(Register)-1]
 		Count = 0
-		for r in range(1, len(Register)):
+		for r in range(0, len(Register)):
 			if (Register[r] == PrevVal):
 				Register[r] = MarkerValue
 				Count = Count + 1
@@ -411,16 +412,22 @@ class HicksConvertor:
 				PrevVal = Register[r] 
 		print(f"  - Pre-calc delta-play for register {RegId}: {round(100 * Count/len(Register), 1)}%")
 
+	def BackupFirstValue(self):
+		self.InitVal = {}
+		for i in range (NR_YM_REGISTERS):
+			self.InitVal[i] = self.YmFile.Registers[i][0]
+
 	#
 	# Convert the given YM file to the Hicks format
 	#
 	def Convert(self, YmFile):
 		self.YmFile = YmFile
-		self.ConstantRegisters = 0
 		self.R = {}
 		self.RLoop = {}
-		
+
 		print("\nCrunching:")
+
+		self.BackupFirstValue()
 
 		print(f"  - Smooth registers R0 to R5")
 		self.SmoothRegisters(self.YmFile.Registers[0], self.YmFile.Registers[1], self.YmFile.Registers[8], self.YmFile.Registers[7], 1)
@@ -480,17 +487,20 @@ class HicksConvertor:
 	# Write the file
 	#
 	def Write(self, StartAddr):
-		
+				
 		with open(self.FileName, "wb") as fd:
-			fd.write(self.YmFile.NbFrames.to_bytes(2,"little"))
-			fd.write(self.ConstantRegisters.to_bytes(1,"little"))
+			# Write: initial values for each register
+			for i in range(NR_YM_REGISTERS):
+				fd.write(self.InitVal[i].to_bytes(1,"little"))
 
+			# Write: address of buffers for each register
 			BufferAddr = {}
-			BufferAddr[0] = StartAddr + 3 + 2 * len(self.RegOrder)
+			BufferAddr[0] = StartAddr + NR_YM_REGISTERS + 2 * len(self.RegOrder)
 			for i in range(len(self.RegOrder)):
 				fd.write(BufferAddr[i].to_bytes(2,"little"))
 				BufferAddr[i+1] = BufferAddr[i] + len(self.R[i]) + 4
 			
+			# Write: register data + loop marker + start address of register data in memory
 			LoopMarker=0x1F
 			for i in range(len(self.RegOrder)):
 				RegisterData = self.YmFile.Registers[self.RegOrder[i]]
