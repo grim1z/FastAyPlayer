@@ -55,6 +55,7 @@ MACRO   _CopyFromDictLoop	LoopReg ; 10 * N NOPS - 1
         ld	(hl), a
         inc	l
         inc	e
+        ds      2
         dec	{LoopReg}
         jr	nz, @CopyLoop
 MEND
@@ -67,14 +68,15 @@ MACRO   _CopyLiteralLoop   LoopReg ; 2 + 10 * N NOPS
 @CopyLoop:
         ld      (hl), d
         inc     l
-        ds      3
+        ds      5
         dec     {LoopReg}
         jr      nz, @ContinueLoop
         jr      @ExitLoop
 @ContinueLoop:
         pop     de
         ld      (hl), e
-        inc     l
+        inc	l
+        ds      2
         dec     {LoopReg}
         jp      nz, @CopyLoop
         dec     sp
@@ -319,7 +321,7 @@ ReLoadDecrunchSavedState  equ	$ + 1
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
         ld	c, NR_REGISTERS_TO_DECRUNCH
-        ld	ly, #05
+        ld	ly, #04
         inc	d
         dec	d
         jr	nz, RestartPausedDecrunch
@@ -328,8 +330,6 @@ ReLoadDecrunchSavedState  equ	$ + 1
         ; Load a new marker
         ;
 FetchNewCrunchMarker:
-        dec	ly
-
         pop	de
 
         ld	a, #1F
@@ -358,7 +358,9 @@ CopyFromDict:
 RestartCopyFromDict:
         _CopyFromDictLoop	b                       ; 10 * N - 1 NOPS       - MOD: A, DE, HL + B
 
-        jr	FetchNewCrunchMarker
+        dec	ly
+        jr	nz, FetchNewCrunchMarker
+        jp      ExitMainDecrunchLoop
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -380,7 +382,9 @@ RestartCopyLiteral:
         _UpdateNrCopySlot	(void)          ; 4 NOPS
         _CopyLiteralLoop	b               ; 2 + 10 * N NOPS
 
-        jp	FetchNewCrunchMarker
+        dec	ly
+        jr	nz, FetchNewCrunchMarker
+        jp      ExitMainDecrunchLoop
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -391,7 +395,6 @@ RestartCopyLiteral:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 RestartPausedDecrunch:
-        dec	ly
         rla
         jr	nc, RestartPausedCopyFromDict
 
@@ -434,12 +437,14 @@ DoFramesLoop:
         pop	hl
         ld	sp, hl
         exx
-        ds      4
+        ds      6
         dec	c
         ld	d, c
         jp	z, DecrunchFinalize
         nop
-        jr	FetchNewCrunchMarker
+        dec	ly
+        jp	nz, FetchNewCrunchMarker
+        jp      ExitMainDecrunchLoop
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -490,13 +495,17 @@ EnterStabilizeLoop:
         dec	ly
         jr	StabilizeLoop
 
+ExitMainDecrunchLoop:
+        xor	a
+        ld	d, a
+
         ;
         ; Write back to memory the current decrunch state.
         ;
 SaveDecrunchState:
         exx
         ld	h, a
-        ld	l, 0
+        ld	l, 0    ; TODO: optimiser avec un registre à 0 quelque part ?????
         add	hl, sp
         ld	sp, (ReLoadDecrunchSavedState)
         push	hl      ; Save current position in crunched data buffer
