@@ -139,7 +139,7 @@ CurrentPlayerBuffer:
         inc     a
         ld	(CurrentPlayerBuffer + 1), a
         exx
-        ld	bc, #F600 + NR_REGISTERS_TO_PLAY + 1
+        ld	bc, #F600 + NR_REGISTERS_TO_PLAY-1
         ld	hl, #c080
         exx
         ld	bc, #F402
@@ -263,21 +263,12 @@ if      SKIP_R12!=1
         WriteToPSGReg   d
 endif
 
-        ;
-        ; Stabilize loop
-        ;
         exx
-RegStabilizeLoop:
         dec	c
-        jr	z, RegStabilizeLoopExit
-        ds	18
-        jr	RegStabilizeLoop
-
-SkipDecrunch:
-        ds	10
-        jp      DecrunchFinalCode
-
-RegStabilizeLoopExit:
+        jr	z, SkipDecrunchTrampoline2
+        ld	a, c
+        add	a, a
+        ld	(NrValuesToDecrunch), a
         exx
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -310,7 +301,7 @@ ReLoadDecrunchSavedState  equ	$ + 1
         ld	(ReLoadDecrunchSavedState), sp
         cp	#20     ; Leave a security gap between the current decrunch position and the player position.
 SkipDecrunchJump:
-        jr	c, SkipDecrunch
+        jr	c, SkipDecrunchTrampoline
         
         ld	a, h
         res	7, h
@@ -331,8 +322,10 @@ SkipDecrunchJump:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-        ld	c, NR_REGISTERS_TO_DECRUNCH
-        ld	ly, #04
+NrValuesToDecrunch = $+1
+        ld	c, 200
+NrDecrunchLoop = $+2
+        ld	ly, 50
         inc	d
         dec	d
         jr	nz, RestartPausedDecrunch
@@ -372,6 +365,11 @@ RestartCopyFromDict:
         dec	ly
         jr	nz, FetchNewCrunchMarker
         jp      ExitMainDecrunchLoop
+
+SkipDecrunchTrampoline2:
+        jp	SkipDecrunch2
+SkipDecrunchTrampoline:
+        jp      SkipDecrunch
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -509,6 +507,9 @@ EnterStabilizeLoop:
 ExitMainDecrunchLoop:
         xor	a
         ld	d, a
+        dec	c
+        ds      6
+        jr	nz, ExitMainDecrunchLoop
 
         ;
         ; Write back to memory the current decrunch state.
@@ -534,6 +535,23 @@ ReturnAddress = $+1
 SkipR1_3:
         ds      3
         jp      SkipR1_3Return
+
+SkipDecrunch2:
+        ld	a, 15
+        ds      4
+        jr	SkipDecrunchLoop
+        
+SkipDecrunch:
+        ld	a, (NrValuesToDecrunch)
+        add	a, 11
+        ds      6
+SkipDecrunchLoop:
+        ds	8
+        dec	a
+        jr	nz, SkipDecrunchLoop
+
+        jp      DecrunchFinalCode
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -650,6 +668,9 @@ ReturnFromDecrunchCodeToInitCode:
 SkipDecrunchRestore = $+1
         ld	hl, 0
         ld	(SkipDecrunchJump), hl
+
+        ld	a, 4
+        ld	(NrDecrunchLoop), a
 
         ret
 
