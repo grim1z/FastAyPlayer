@@ -271,7 +271,12 @@ RegStabilizeLoop:
         dec	c
         jr	z, RegStabilizeLoopExit
         ds	18
-        jr      RegStabilizeLoop
+        jr	RegStabilizeLoop
+
+SkipDecrunch:
+        ds	10
+        jp      DecrunchFinalCode
+
 RegStabilizeLoopExit:
         exx
 
@@ -297,10 +302,16 @@ DecrunchEntryPoint:
 ReLoadDecrunchSavedState  equ	$ + 1
         ld	sp, DecrunchSavedState
         pop	de      ; d = restart if not null       e = Lower byte of source address if restart copy from windows. Undef otherwise.
+        ld	a, l    ; Current position of the player in the decrunched buffer
         pop	hl      ; Current position in decrunch buffer
+        sub	l       ; Distance 
         exx
         pop	hl      ; Current position in crunched data buffer
         ld	(ReLoadDecrunchSavedState), sp
+        cp	#20     ; Leave a security gap between the current decrunch position and the player position.
+SkipDecrunchJump:
+        jr	c, SkipDecrunch
+        
         ld	a, h
         res	7, h
         ld	sp, hl          ; Load current position in decrunch buffer
@@ -601,6 +612,11 @@ InitDecrunchStateLoop:
         ld	bc, #0003
         ldir
 
+        ld	hl, (SkipDecrunchJump)
+        ld	(SkipDecrunchRestore), hl
+        ld	hl, 0
+        ld	(SkipDecrunchJump), hl
+
         ;
         ; Loop to initialize decrunch buffers with 1, 2, 3,..., N values
         ;
@@ -627,6 +643,13 @@ ReturnFromDecrunchCodeToInitCode:
         ld	de, DecrunchFinalCode
         ld	bc, #0003
         ldir
+
+        ;
+        ; Restore "skip decrunch" jump
+        ;
+SkipDecrunchRestore = $+1
+        ld	hl, 0
+        ld	(SkipDecrunchJump), hl
 
         ret
 

@@ -132,10 +132,10 @@ if    _HicksPlayer
 
 ;      org	adr_ayc: incbin "results/v5/Short-Loop0.ayc"
 ;      org	adr_ayc: incbin "results/v5/Solarium.ayc"                         ; 0:51      - Const: 12
-      org	adr_ayc: incbin "results/v5/From_Scratch-Part1.ayc"               ; 1:08      - Const: 12
+;      org	adr_ayc: incbin "results/v5/From_Scratch-Part1.ayc"               ; 1:08      - Const: 12
 ;      org	adr_ayc: incbin "results/v5/Boblines.ayc"                         ; 1:17      - Const: 12
 ;	org	adr_ayc: incbin "results/v5/Hocus_Pocus.ayc"                      ; 2:21      - Const: -
-;      org	adr_ayc: incbin "results/v5/cybernoid.ayc"                        ; 2:21      - Const: 5, 11, 12, 13
+      org	adr_ayc: incbin "results/v5/cybernoid.ayc"                        ; 2:21      - Const: 5, 11, 12, 13
 ;      org	adr_ayc: incbin "results/v5/Fractal.ayc"                          ; 3:33      - Const: 12
 ;      org	adr_ayc: incbin "results/v5/Orion_Prime-Introduction.ayc"         ; 3:47      - Const: 12
 ;      org	adr_ayc: incbin "results/v5/Midline_Process-Carpet.ayc"           ; 5:22      - Const: 12
