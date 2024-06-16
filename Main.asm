@@ -130,18 +130,24 @@ if    _HicksPlayer
       include     "HicksPlayer.asm"
       print	"Player size:", $-adr_play
 
+
 ;      org	adr_ayc: incbin "results/v5/Short-Loop0.ayc"
-;      org	adr_ayc: incbin "results/v5/Solarium.ayc"                         ; 0:51      - Const: 12
 ;      org	adr_ayc: incbin "results/v5/From_Scratch-Part1.ayc"               ; 1:08      - Const: 12
-;      org	adr_ayc: incbin "results/v5/Boblines.ayc"                         ; 1:17      - Const: 12
-;	org	adr_ayc: incbin "results/v5/Hocus_Pocus.ayc"                      ; 2:21      - Const: -
-      org	adr_ayc: incbin "results/v5/cybernoid.ayc"                        ; 2:21      - Const: 5, 11, 12, 13
-;      org	adr_ayc: incbin "results/v5/Fractal.ayc"                          ; 3:33      - Const: 12
+;      org	adr_ayc: incbin "results/v5/Hocus_Pocus.ayc"                      ; 2:21      - Const: -
+;      org	adr_ayc: incbin "results/v5/cybernoid.ayc"                        ; 2:21      - Const: 5, 11, 12, 13
 ;      org	adr_ayc: incbin "results/v5/Orion_Prime-Introduction.ayc"         ; 3:47      - Const: 12
 ;      org	adr_ayc: incbin "results/v5/Midline_Process-Carpet.ayc"           ; 5:22      - Const: 12
 ;      org	adr_ayc: incbin "results/v5/Sudoku_Theme1.ayc"                    ; 7:17      - Const: 12
+      org	adr_ayc: incbin "results/v5/Boblines.ayc"                         ; 1:17      - Const: 12
+;      org	adr_ayc: incbin "results/v5/Fractal.ayc"                          ; 3:33      - Const: 12
 ;      org	adr_ayc: incbin "results/v5/Renegade.ayc"                         ; 9:38      - Const: 12
-;      org	adr_ayc: incbin "results/v5/Wireshar.ayc"
+;      org	adr_ayc: incbin "results/v5/Solarium.ayc"                         ; 0:51      - Const: 12
+;      org	adr_ayc: incbin "results/v5/Wireshar.ayc"                         ; 2:52      - Const: 12
+;      org	adr_ayc: incbin "results/v5/Alienall.ayc"                         ; 1:59      - Const: 12
+;      org	adr_ayc: incbin "results/v5/Boules_et_bits.ayc"                   ; 3:04      - Const: 12
+;      org	adr_ayc: incbin "results/v5/Deep_space.ayc"                       ; 4:17      - Const: 12
+;      org   adr_ayc: incbin "results/v5/Excellence_in_art.ayc"               ; 2:48      - Const: 12
+;      org	adr_ayc: incbin "results/v5/Harmless_grenade.ayc"                 ; 1:01      - Const: 12
 
 ;      org	adr_ayc: incbin "resources/Cybernoid.ayc"
 ;     org	adr_ayc: incbin "resources/hicks-ayc/Hocus-Hicks.ayc"

@@ -43,6 +43,11 @@ ym:
 	./script/Ym2Hicks.py resources/src-ym/Renegade.ym results/v5/Renegade.ayc
 	./script/Ym2Hicks.py resources/src-ym/Solarium.ym results/v5/Solarium.ayc
 	./script/Ym2Hicks.py resources/src-ym/Wireshar.ym results/v5/Wireshar.ayc
+	./script/Ym2Hicks.py resources/src-ym/Alienall.ym results/v5/Alienall.ayc
+	./script/Ym2Hicks.py resources/src-ym/Boules_et_bits.ym results/v5/Boules_et_bits.ayc
+	./script/Ym2Hicks.py resources/src-ym/Deep_space.ym results/v5/Deep_space.ayc
+	./script/Ym2Hicks.py resources/src-ym/Excellence_in_art.ym results/v5/Excellence_in_art.ayc
+	./script/Ym2Hicks.py resources/src-ym/Harmless_grenade.ym results/v5/Harmless_grenade.ayc
 
 #        ./script/Ym2Hicks.py resources/src-ym/Short-Loop0.ym results/v5/Short-Loop0.ayc
 #        ./script/Ym2Hicks.py resources/src-ym/Short-Loop1.ym results/v5/Short-Loop1.ayc

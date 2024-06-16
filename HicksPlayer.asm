@@ -139,7 +139,7 @@ CurrentPlayerBuffer:
         inc     a
         ld	(CurrentPlayerBuffer + 1), a
         exx
-        ld	bc, #F600 + NR_REGISTERS_TO_PLAY-1
+        ld	bc, #F600 + 14  ; This value can be adjusted to increase performance.
         ld	hl, #c080
         exx
         ld	bc, #F402
@@ -299,7 +299,7 @@ ReLoadDecrunchSavedState  equ	$ + 1
         exx
         pop	hl      ; Current position in crunched data buffer
         ld	(ReLoadDecrunchSavedState), sp
-        cp	#20     ; Leave a security gap between the current decrunch position and the player position.
+        cp	28      ; Leave a security gap between the current decrunch position and the player position.
 SkipDecrunchJump:
         jr	c, SkipDecrunchTrampoline
         

@@ -245,9 +245,9 @@ class LzssCompressor:
 				# This is a pure heuristic optimization which limits the bad impact of the "4 tokens constaint"
 				#
 				MatchDistance, MatchLength = Match
-				if Literal and len(Literal) + MatchLength < 6:
+				if Literal and len(Literal) + MatchLength < 7:
 					Match = False
-				elif PrevLen2 + MatchLength < 6:
+				elif PrevLen2 + MatchLength < 7:
 					Match = False
 
 			if Match:
@@ -271,13 +271,13 @@ class LzssCompressor:
 				# Scenario #2
 				#   Token 1: Decrunch restart producing 1 byte
 				#   Token 3: A frame loop producing 1 byte
-				if Match and Remain != 0 and Remain < self.SlotLength - 2:
-					MissingBytes = self.SlotLength - 2 - Remain
-					MatchLength = MatchLength - MissingBytes
-					if (MatchLength < 3):
-						Match = False
-					else:
-						Match = MatchDistance, MatchLength
+#				if Match and Remain != 0 and Remain < self.SlotLength - 2:
+#					MissingBytes = self.SlotLength - 2 - Remain
+#					MatchLength = MatchLength - MissingBytes
+#					if (MatchLength < 3):
+#						Match = False
+#					else:
+#						Match = MatchDistance, MatchLength
 
 			if Match:
 				MatchDistance, MatchLength = Match
@@ -347,14 +347,12 @@ class HicksConvertor:
 
 			# Smooth Period if volume is 0 or tone if off.
 			if Volume[i] == 0 or ToneOff:
-				if PeriodLow[i] != PeriodLow[i-1]:
-					PeriodLow[i] = PeriodLow[i-1]		# V5 optimisation
-				if PeriodHigh[i] != PeriodHigh[i-1]:
-					PeriodHigh[i] = PeriodHigh[i-1]
+				PeriodLow[i] = PeriodLow[i-1]		# V5 optimisation
+				PeriodHigh[i] = PeriodHigh[i-1]
 
 			# Smooth volume if tone is off
 			# In this case, volume is not used by the PSG.
-			if ToneOff and Volume[i] != Volume[i-1]:
+			if ToneOff:
 				Volume[i] = VolMode | PrevVol			# V4 optimization
 
 	#
@@ -461,7 +459,7 @@ class HicksConvertor:
 		self.PrecaclNoReprog(11, 0x01)
 
 		NrRegisters = len(self.RegOrder)
-		self.Compressor.SlotLength = NrRegisters
+		self.Compressor.SlotLength = 16
 		for r in range(NrRegisters):
 			if self.RegOrder[r] == 1:
 				print(f"  - Crunch register 1+3: ", end='', flush=True)
@@ -499,7 +497,7 @@ class HicksConvertor:
 			for i in range(len(self.RegOrder)):
 				fd.write(BufferAddr[i].to_bytes(2,"little"))
 				BufferAddr[i+1] = BufferAddr[i] + len(self.R[i]) + 4
-			
+
 			# Write: register data + loop marker + start address of register data in memory
 			LoopMarker=0x1F
 			for i in range(len(self.RegOrder)):
