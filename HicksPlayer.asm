@@ -1,13 +1,13 @@
 org #3300
 
         DECRUNCH_BUFFER_ADDR_HIGH	equ #C0
-        NR_REGISTERS_TO_DECRUNCH        equ #0C
+        NR_REGISTERS_TO_DECRUNCH        equ #0B
         NR_REGISTERS_TO_PLAY	equ NR_REGISTERS_TO_DECRUNCH + 2
 
         RESTART_COPY_FROM_DICT_MARKER   equ     0
         RESTART_COPY_LITERAL_MARKER	equ     1
 
-        SKIP_R12	= 0
+        SKIP_R12	= 1
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -252,12 +252,12 @@ SkipRegister13
         ;
         inc	d
         WriteToPSGRegSkip	d, e
-        inc	h
 
 if      SKIP_R12!=1
         ;
         ; Write to register 12
         ;
+        inc	h
         inc	d
         ld	a, (hl)
         WriteToPSGReg   d
