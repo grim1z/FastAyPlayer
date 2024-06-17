@@ -101,8 +101,8 @@ MACRO   WriteToPSGReg	RegNumber       ; 25 NOPS
         out	(c), a
 
         exx
-        out	(c), l
-        out	(c), h
+        out	(c), c
+        out	(c), b
         exx
 MEND
 
@@ -139,8 +139,7 @@ CurrentPlayerBuffer:
         inc     a
         ld	(CurrentPlayerBuffer + 1), a
         exx
-        ld	b, #F6
-        ld	hl, #c080
+        ld	bc, #C680
         exx
         ld	bc, #F400 + 14  ; This value can be adjusted to increase performance.
         ld	de, #0201
