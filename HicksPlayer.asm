@@ -92,9 +92,9 @@ MEND
 
 MACRO   WriteToPSGReg	RegNumber       ; 25 NOPS
         out	(c), {RegNumber}
+        dec	c              ; Dec number of registers to play
 
         exx
-        dec	c              ; Dec number of registers to play
         out	(c), 0
         exx
 
@@ -139,11 +139,11 @@ CurrentPlayerBuffer:
         inc     a
         ld	(CurrentPlayerBuffer + 1), a
         exx
-        ld	bc, #F600 + 14  ; This value can be adjusted to increase performance.
+        ld	b, #F6
         ld	hl, #c080
         exx
-        ld	bc, #F402
-        ld	de, #0301
+        ld	bc, #F400 + 14  ; This value can be adjusted to increase performance.
+        ld	de, #0201
 
         ;
         ; Write to register 0
@@ -154,18 +154,18 @@ CurrentPlayerBuffer:
         ;
         ; Write to register 2
         ;
-        WriteToPSGRegSkip       c, e
+        WriteToPSGRegSkip       d, e
         inc	h
 
         ;
         ; Write to register 1
         ;
-        dec	c
+        inc     d
         ld	a, (hl)
         dec     l
         cp	(hl)
         jp	z, SkipR1_3
-        WriteToPSGReg   c
+        WriteToPSGReg   e
 
         ;
         ; Write to register 3
@@ -207,9 +207,9 @@ SkipR5:
         rra
         inc	h
         bit	7, (hl)                 ; Check if we have to program register 13.
-        ld	c, 13
+        ld	e, 13
         jr	nz, SkipRegister13
-        WriteToPSGReg	c
+        WriteToPSGReg	e
 SkipRegister13
 
         ;
@@ -251,7 +251,7 @@ SkipRegister13
         ; Write to register 11
         ;
         inc	d
-        WriteToPSGRegSkip	d, e
+        WriteToPSGRegSkip	d, 1
 
 if      SKIP_R12!=1
         ;
@@ -263,13 +263,11 @@ if      SKIP_R12!=1
         WriteToPSGReg   d
 endif
 
-        exx
         dec	c
         jr	z, SkipDecrunchTrampoline2
         ld	a, c
         add	a, a
         ld	(NrValuesToDecrunch), a
-        exx
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
