@@ -86,10 +86,6 @@ MEND
         ;
         ; Write a value in a PSG register
         ;
-
-        NO_REG_SHIFT	= 0
-        REG_SHIFT	= 1
-
 MACRO   WriteToPSGReg	RegNumber       ; 25 NOPS
         out	(c), {RegNumber}
         dec	c              ; Dec number of registers to play
@@ -133,15 +129,15 @@ MEND
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-CurrentPlayerBuffer:
+CurrentPlayerBuffer = $+1
         ld	hl, DECRUNCH_BUFFER_ADDR_HIGH << 8
         ld	a, l
         inc     a
-        ld	(CurrentPlayerBuffer + 1), a
+        ld	(CurrentPlayerBuffer), a
         exx
         ld	bc, #C680
         exx
-        ld	bc, #F400 + 14  ; This value can be adjusted to increase performance.
+        ld	bc, #F400 + 13  ; This value can be adjusted to increase performance. The lower, the better performance.
         ld	de, #0201
 
         ;
@@ -262,10 +258,9 @@ if      SKIP_R12!=1
         WriteToPSGReg   d
 endif
 
-        dec	c
-        jr	z, SkipDecrunchTrampoline2
         ld	a, c
         add	a, a
+        jr	z, SkipDecrunchTrampoline2
         ld	(NrValuesToDecrunch), a
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -276,26 +271,30 @@ endif
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+        ex	de, hl  ; Protect HL from next modification
+
         ;
         ; Move to the next decrunch buffer and handle buffer loop.
         ;
-        ld	a, (ReLoadDecrunchSavedState)
+DecrunchEntryPoint:
+ReLoadDecrunchSavedState  equ	$ + 1
+        ld	hl, DecrunchSavedState
+        ld	a, l
         cp	NR_REGISTERS_TO_DECRUNCH * 6
         jr	nz, SkipBufferReset
         xor	a
 SkipBufferReset:
-        ld	(ReLoadDecrunchSavedState), a
+        ld	l, a
+        ld	sp, hl
 
-DecrunchEntryPoint:
-ReLoadDecrunchSavedState  equ	$ + 1
-        ld	sp, DecrunchSavedState
+        ld	a, e    ; Backup current position of the player in the decrunched buffer
         pop	de      ; d = restart if not null       e = Lower byte of source address if restart copy from windows. Undef otherwise.
-        ld	a, l    ; Current position of the player in the decrunched buffer
         pop	hl      ; Current position in decrunch buffer
-        sub	l       ; Distance 
+        sub	l       ; Compute distance between player read position and current position in decrunch buffer.
         exx
         pop	hl      ; Current position in crunched data buffer
         ld	(ReLoadDecrunchSavedState), sp
+
         cp	28      ; Leave a security gap between the current decrunch position and the player position.
 SkipDecrunchJump:
         jr	c, SkipDecrunchTrampoline
@@ -390,7 +389,7 @@ RestartCopyLiteral:
 
         dec	ly
         jr	nz, FetchNewCrunchMarker
-        jp      ExitMainDecrunchLoop
+        jr      ExitMainDecrunchLoop
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -413,7 +412,7 @@ RestartPausedDecrunch:
         jr	RestartCopyLiteral
 
 RestartPausedCopyFromDict:
-        ds      5
+        cp	a, (iX)    ; WASTE TIME WITH FEW BYTES (5 NOPS - 3  BYTES)
 
         ld	a, d
         cp	c
@@ -438,18 +437,20 @@ RestartSubCopyFromDict:
 DoFramesLoop:
         ld	(hl), d
         inc	l
-        
         exx
         pop	hl
         ld	sp, hl
         exx
-        ds      6
+
+        inc	(hl)    ; WASTE TIME WITH FEW BYTES (3 NOPS - 1 BYTE)
+        dec	(hl)    ; WASTE TIME WITH FEW BYTES (3 NOPS - 1 BYTE)
+        
         dec	c
         ld	d, c
         jp	z, DecrunchFinalize
         nop
         dec	ly
-        jp	nz, FetchNewCrunchMarker
+        jr	nz, FetchNewCrunchMarker
         jp      ExitMainDecrunchLoop
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -535,7 +536,7 @@ SkipR1_3:
 
 SkipDecrunch2:
         ld	a, 15
-        ds      4
+        ds      1
         jr	SkipDecrunchLoop
         
 SkipDecrunch:
