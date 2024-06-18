@@ -55,7 +55,7 @@ MACRO   _CopyFromDictLoop	LoopReg ; 10 * N NOPS - 1
         ld	(hl), a
         inc	l
         inc	e
-        ds      2
+        cp	(hl)            ; WASTE TIME WITH FEW BYTES (2 NOPS - 1 BYTE)
         dec	{LoopReg}
         jr	nz, @CopyLoop
 MEND
@@ -68,7 +68,7 @@ MACRO   _CopyLiteralLoop   LoopReg ; 2 + 10 * N NOPS
 @CopyLoop:
         ld      (hl), d
         inc     l
-        ds      5
+        cp	a, (ix)            ; WASTE TIME WITH FEW BYTES (5 NOPS - 3 BYTES)
         dec     {LoopReg}
         jr      nz, @ContinueLoop
         jr      @ExitLoop
@@ -76,7 +76,7 @@ MACRO   _CopyLiteralLoop   LoopReg ; 2 + 10 * N NOPS
         pop     de
         ld      (hl), e
         inc	l
-        ds      2
+        cp	(hl)            ; WASTE TIME WITH FEW BYTES (2 NOPS - 1 BYTE)
         dec     {LoopReg}
         jp      nz, @CopyLoop
         dec     sp
@@ -286,12 +286,10 @@ ReLoadDecrunchSavedState  equ	$ + 1
 SkipBufferReset:
         ld	l, a
         ld	sp, hl
-
         ld	a, e    ; Backup current position of the player in the decrunched buffer
         pop	de      ; d = restart if not null       e = Lower byte of source address if restart copy from windows. Undef otherwise.
-        pop	hl      ; Current position in decrunch buffer
-        sub	l       ; Compute distance between player read position and current position in decrunch buffer.
-        exx
+        pop	bc      ; Current position in decrunch buffer
+        sub	b       ; Compute distance between player read position and current position in decrunch buffer.
         pop	hl      ; Current position in crunched data buffer
         ld	(ReLoadDecrunchSavedState), sp
 
@@ -302,7 +300,9 @@ SkipDecrunchJump:
         ld	a, h
         res	7, h
         ld	sp, hl          ; Load current position in decrunch buffer
-        exx
+
+        ld	h, c
+        ld	l, b
 
         ; SP = current position in decrunch source buffer
         ; HL = current position in decrunch destination buffer
@@ -363,7 +363,9 @@ RestartCopyFromDict:
         jp      ExitMainDecrunchLoop
 
 SkipDecrunchTrampoline2:
-        jp	SkipDecrunch2
+        ld	a, 15
+        jp	SkipDecrunchLoop
+
 SkipDecrunchTrampoline:
         jp      SkipDecrunch
 
@@ -447,8 +449,10 @@ DoFramesLoop:
         
         dec	c
         ld	d, c
-        jp	z, DecrunchFinalize
-        nop
+        jr	z, DecrunchFinalize
+
+        cp	(hl)    ; WASTE TIME WITH FEW BYTES (2 NOPS - 1 BYTE)
+
         dec	ly
         jr	nz, FetchNewCrunchMarker
         jp      ExitMainDecrunchLoop
@@ -505,22 +509,22 @@ EnterStabilizeLoop:
 ExitMainDecrunchLoop:
         xor	a
         ld	d, a
-        dec	c
         ds      6
+        dec	c
         jr	nz, ExitMainDecrunchLoop
 
         ;
         ; Write back to memory the current decrunch state.
         ;
 SaveDecrunchState:
-        exx
+        ld	b, l    ; Dirty trick!!! BC = LH (backup for latter push) while setting HL to AC.
+        ld	l, c
+        ld	c, h
         ld	h, a
-        ld	l, 0    ; TODO: optimiser avec un registre à 0 quelque part ?????
         add	hl, sp
         ld	sp, (ReLoadDecrunchSavedState)
         push	hl      ; Save current position in crunched data buffer
-        exx
-        push	hl      ; Save current position in decrunch buffer
+        push	bc      ; Save current position in decrunch buffer
         push	de
 DecrunchFinalCode:
 
@@ -533,11 +537,6 @@ ReturnAddress = $+1
 SkipR1_3:
         ds      3
         jp      SkipR1_3Return
-
-SkipDecrunch2:
-        ld	a, 15
-        ds      1
-        jr	SkipDecrunchLoop
         
 SkipDecrunch:
         ld	a, (NrValuesToDecrunch)
@@ -602,15 +601,17 @@ InitRegisterLoop:               ; TODO: pourquoi ne pas utiliser la macro WriteT
         exa
 
 InitDecrunchStateLoop:
-        inc	de
         ld	(de), a
         inc	de
+        ld	(de), a
         inc	de
         exa
         ld	(de), a
         inc     a
         exa
-        inc     de
+        inc	de
+        ld	(de), a
+        inc	de
         ldi                     ; Copy register crunched data address
         ldi
         djnz	InitDecrunchStateLoop
