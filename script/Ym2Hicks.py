@@ -264,21 +264,6 @@ class LzssCompressor:
 				if not Literal and (PrevLen1 >= 0) and (1 + PrevLen1 + PrevLen2 + MatchLength < self.SlotLength):
 					Match = False
 
-				# Special case for ending bytes
-				# We can face an even worth case scenario:
-				#   Token 1: Decrunch restart producing 1 byte
-				#   Token 4: A frame loop producing 1 byte
-				# Scenario #2
-				#   Token 1: Decrunch restart producing 1 byte
-				#   Token 3: A frame loop producing 1 byte
-#				if Match and Remain != 0 and Remain < self.SlotLength - 2:
-#					MissingBytes = self.SlotLength - 2 - Remain
-#					MatchLength = MatchLength - MissingBytes
-#					if (MatchLength < 3):
-#						Match = False
-#					else:
-#						Match = MatchDistance, MatchLength
-
 			if Match:
 				MatchDistance, MatchLength = Match
 				if Literal:
@@ -322,17 +307,17 @@ class HicksConvertor:
 	def __init__(self, FileName):
 		self.FileName = FileName
 		self.Compressor = LzssCompressor(256, 31)
-#			         0, 2, (1+3), 4, (5+13), 6, 8, 9, 10, 11, 12, 7]
+#			         0, 2, (1+3), 4, (5+13), 6, 7, 8, 9, 10, 11, 12]
 		self.RegOrder = [0, 2, 1,     4, 5,      6, 7, 8, 9, 10, 11, 12]
 
 	def MergeRegisters(self, R1, R2):
 		for i in range (len(R1)):
 			R1[i] = (R2[i] & 0x0f) << 4 | (R1[i] & 0x0f)
 
-	def AdjustR6ForR13(self, R7, R13):
-		for i in range (len(R7)):
+	def AdjustR6ForR13(self, R6, R13):
+		for i in range (len(R6)):
 			if R13[i] == 0xFF:
-				R7[i] = R7[i] | 0x80
+				R6[i] = R6[i] | 0x80
 				R13[i] = R13[i-1]				# V2 optimisation
 
 	def SmoothRegisters(self, PeriodLow, PeriodHigh, Volume, Mixer, Voice):
@@ -396,6 +381,104 @@ class HicksConvertor:
 		print(f"  - Constant registers:", ConstRegTxt)
 
 	#
+	# Compute the distance between the current register value and the previous value
+	#
+	def DistFromPrevValue(self, Register, Current, Next, MarkerValue, VolumeRegister):
+		if Register[Current] == MarkerValue:
+			return 1000
+		if VolumeRegister and ((Register[Current] & 0x80) == (Register[Next] & 0x80)):
+			return 1000
+		for i in range (Current-1, 0, -1):
+			if Register[i] != MarkerValue:
+				return abs(Register[i] - Register[Current])
+		return 1000
+
+	#
+	# Delay one register programming to the next frame.
+	#
+	def DelayOneRegister(self, Current, Next):
+		Distance = {}
+		PeriodLowRegisters = [0, 2, 4, 11]
+		VolumeRegisters = [8, 9, 10]
+
+		for r in PeriodLowRegisters:
+			Distance[r] = self.DistFromPrevValue(self.YmFile.Registers[r], Current, Next, 1, False)
+		for r in VolumeRegisters:
+			Distance[r] = self.DistFromPrevValue(self.YmFile.Registers[r], Current, Next, 0xF4, True) * 8
+		MinIndex, MinValue = min(Distance.items(), key=lambda x: x[1])
+
+		if MinValue != 1000:
+			self.YmFile.Registers[MinIndex][Next] = self.YmFile.Registers[MinIndex][Current]
+			if MinIndex in PeriodLowRegisters:
+				self.YmFile.Registers[MinIndex][Current] = 1
+			else:
+				self.YmFile.Registers[MinIndex][Current] = 0xF4
+			return 1
+		else:
+			return 0
+
+	#
+	# Count max register changes for one frame and limit changes to 11.
+	#
+	def CountAndLimitRegChangesOneFrame(self, Current, Prev, Next):
+		Changes = 0
+		if self.YmFile.Registers[0][Current] != 1:
+			Changes = Changes + 1
+		if self.YmFile.Registers[1][Current] != self.YmFile.Registers[1][Prev]:
+			Changes = Changes + 2
+		if self.YmFile.Registers[2][Current] != 1:
+			Changes = Changes + 1
+		# Register[3] handled with register 1
+		if self.YmFile.Registers[4][Current] != 1:
+			Changes = Changes + 1
+		if self.YmFile.Registers[5][Current] != self.YmFile.Registers[5][Prev]:
+			Changes = Changes + 1
+		if self.YmFile.Registers[6][Current] != 0xF4:
+			Changes = Changes + 1
+		if self.YmFile.Registers[7][Current] != 0xF4:
+			Changes = Changes + 1
+		if self.YmFile.Registers[8][Current] != 0xF4:
+			Changes = Changes + 1
+		if self.YmFile.Registers[9][Current] != 0xF4:
+			Changes = Changes + 1
+		if self.YmFile.Registers[10][Current] != 0xF4:
+			Changes = Changes + 1
+		if self.YmFile.Registers[11][Current] != 1:
+			Changes = Changes + 1
+		if self.YmFile.Registers[12][Current] != self.YmFile.Registers[12][Prev]:
+			Changes = Changes + 1
+		if (self.YmFile.Registers[6][Current] & 0x80) != 0x80:	# Register 13
+			Changes = Changes + 1
+
+		if Changes > 12:
+			Changes = Changes - self.DelayOneRegister(Current, Next)
+
+		if Changes > 11:
+			Changes = Changes - self.DelayOneRegister(Current, Next)
+
+		return Changes
+
+	#
+	# Count max register changes and limit changes to 11.
+	#
+	def CountAndLimitRegChanges(self):
+		MaxChanges = [0] * 15
+
+		for i in range (1, self.YmFile.NbFrames):
+			if i == self.YmFile.NbFrames - 1:				
+				NextIndex = self.YmFile.LoopFrame
+			else:
+				NextIndex = i+1
+			Changes = self.CountAndLimitRegChangesOneFrame(i, i-1, NextIndex)
+			MaxChanges[Changes] = MaxChanges[Changes] + 1
+
+		Changes = self.CountAndLimitRegChangesOneFrame(self.YmFile.NbFrames - 1, self.YmFile.LoopFrame, self.YmFile.LoopFrame + 1)
+		MaxChanges[Changes] = MaxChanges[Changes] + 1
+		print("  - Frames / Number of registers modified")
+		for i in range(0, 15):
+			print(f"     * {i:2}: {MaxChanges[i]}")
+
+	#
 	# Insert markers for repeating value (used to quickly avoid to program a register)
 	#
 	def PrecaclNoReprog(self, RegId, MarkerValue):
@@ -408,7 +491,7 @@ class HicksConvertor:
 				Count = Count + 1
 			else:
 				PrevVal = Register[r] 
-		print(f"  - Pre-calc delta-play for register {RegId}: {round(100 * Count/len(Register), 1)}%")
+		print(f"     * R{RegId}: {round(100 * Count/len(Register), 1)}%")
 
 	def BackupFirstValue(self):
 		self.InitVal = {}
@@ -423,7 +506,7 @@ class HicksConvertor:
 		self.R = {}
 		self.RLoop = {}
 
-		print("\nCrunching:")
+		print("\nPreprocessing data:")
 
 		self.BackupFirstValue()
 
@@ -446,8 +529,8 @@ class HicksConvertor:
 		print(f"  - Merge registers 5+13")
 		self.MergeRegisters(self.YmFile.Registers[5], self.YmFile.Registers[13])
 		print(f"  - Adjust R6 register for R13 no reset case")
-		self.AdjustR6ForR13(self.YmFile.Registers[6], self.YmFile.Registers[13])
-
+		self.AdjustR6ForR13(self.YmFile.Registers[6], self.YmFile.Registers[13])		
+		print(f"  - Preprocess delta-play (delta-play percentage)")
 		self.PrecaclNoReprog(0, 0x01)
 		self.PrecaclNoReprog(2, 0x01)
 		self.PrecaclNoReprog(4, 0x01)
@@ -457,6 +540,10 @@ class HicksConvertor:
 		self.PrecaclNoReprog(9, 0xF4)
 		self.PrecaclNoReprog(10, 0xF4)
 		self.PrecaclNoReprog(11, 0x01)
+
+		self.CountAndLimitRegChanges()
+
+		print("\nCrunching:")
 
 		NrRegisters = len(self.RegOrder)
 		self.Compressor.SlotLength = 16
