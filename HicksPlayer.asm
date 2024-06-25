@@ -12,6 +12,34 @@ org #3300
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;
+; Waste time using as few bytes as possible.
+;
+MACRO   SKIP_NOPS	Nops
+        if      {Nops}	== 2
+                cp	(hl)    ; WASTE TIME WITH FEW BYTES (2 NOPS - 1 BYTE)
+        else
+                if	{Nops}	== 3
+                        jr	$+2     ; Add hl, RR    ; inc (hl)      ; pop hl
+                else
+                        if	{Nops}	== 5
+                                cp	a, (ix) ; WASTE TIME WITH FEW BYTES (5 NOPS - 3 BYTES)
+                        else
+                                if	{Nops}	== 6
+                                        inc	(hl)    ; WASTE TIME WITH FEW BYTES (3 NOPS - 1 BYTE)
+                                        dec	(hl)    ; WASTE TIME WITH FEW BYTES (3 NOPS - 1 BYTE)
+                                else
+                                        if      {Nops}	== 8
+                                                inc	(hl)    ; WASTE TIME WITH FEW BYTES (3 NOPS - 1 BYTE)
+                                                cp      (hl)
+                                                dec	(hl)    ; WASTE TIME WITH FEW BYTES (3 NOPS - 1 BYTE)
+                                        endif
+                                endif
+                        endif
+                endif
+        endif
+MEND
+
+;
 ; Update the number of remaining "copy slots" from the number of bytes to process in the next copy operation.
 ;
 MACRO   _UpdateNrCopySlot               ; 4 NOPS
@@ -49,7 +77,7 @@ MACRO   _CopyFromDictLoop	LoopReg ; 10 * N NOPS - 1
         ld	(hl), a
         inc	l
         inc	e
-        cp	(hl)            ; WASTE TIME WITH FEW BYTES (2 NOPS - 1 BYTE)
+        SKIP_NOPS 2
         dec	{LoopReg}
         jr	nz, @CopyLoop
 MEND
@@ -61,8 +89,8 @@ MEND
 MACRO   _CopyLiteralLoop   LoopReg ; 2 + 10 * N NOPS
 @CopyLoop:
         ld      (hl), d
-        inc     l
-        cp	a, (ix)            ; WASTE TIME WITH FEW BYTES (5 NOPS - 3 BYTES)
+        inc	l
+        SKIP_NOPS 5
         dec     {LoopReg}
         jr      nz, @ContinueLoop
         jr      @ExitLoop
@@ -70,7 +98,7 @@ MACRO   _CopyLiteralLoop   LoopReg ; 2 + 10 * N NOPS
         pop     de
         ld      (hl), e
         inc	l
-        cp	(hl)            ; WASTE TIME WITH FEW BYTES (2 NOPS - 1 BYTE)
+        SKIP_NOPS 2
         dec     {LoopReg}
         jp      nz, @CopyLoop
         dec     sp
@@ -406,7 +434,7 @@ RestartPausedDecrunch:
         jr	RestartCopyLiteral
 
 RestartPausedCopyFromDict:
-        cp	a, (iX)    ; WASTE TIME WITH FEW BYTES (5 NOPS - 3  BYTES)
+        SKIP_NOPS 5
 
         ld	a, d
         cp	c
@@ -436,14 +464,13 @@ DoFramesLoop:
         ld	sp, hl
         exx
 
-        inc	(hl)    ; WASTE TIME WITH FEW BYTES (3 NOPS - 1 BYTE)
-        dec	(hl)    ; WASTE TIME WITH FEW BYTES (3 NOPS - 1 BYTE)
+        SKIP_NOPS 6
         
         dec	c
         ld	d, c
         jr	z, DecrunchFinalize
 
-        cp	(hl)    ; WASTE TIME WITH FEW BYTES (2 NOPS - 1 BYTE)
+        SKIP_NOPS 2
 
         dec	ly
         jr	nz, FetchNewCrunchMarker
@@ -491,9 +518,10 @@ DecrunchFinalize:
 StabilizeLoop:
         jr	z, SaveDecrunchState
 
-        ds      3
+        SKIP_NOPS 3
 EnterStabilizeLoop:
-        ds      17
+        ld	b, 4
+        djnz    $
 
         dec	ly
         jr	StabilizeLoop
@@ -501,7 +529,7 @@ EnterStabilizeLoop:
 ExitMainDecrunchLoop:
         xor	a
         ld	d, a
-        ds      6
+        SKIP_NOPS 6
         dec	c
         jr	nz, ExitMainDecrunchLoop
 
@@ -527,15 +555,15 @@ ReturnAddress = $+1
         jp	#0000
 
 SkipR1_3:
-        ds      3
+        SKIP_NOPS 3
         jp      SkipR1_3Return
         
 SkipDecrunch:
         ld	a, (NrValuesToDecrunch)
         add	a, 11
-        ds      6
+        SKIP_NOPS 6
 SkipDecrunchLoop:
-        ds	8
+        SKIP_NOPS 8
         dec	a
         jr	nz, SkipDecrunchLoop
 

@@ -16,8 +16,6 @@
 
       _HicksPlayer	= 1
 
-      include "../Sanity/macros/Macros.mac"
-
 ;
 ; --- Macros ---
 ;
@@ -131,7 +129,7 @@ if    _HicksPlayer
       print	"Player size:", $-adr_play
 
 
-;      org	adr_ayc: incbin "results/v5/Short-Loop9.ayc"
+      org	adr_ayc: incbin "results/v5/Short-Loop1.ayc"
 ;      org	adr_ayc: incbin "results/v5/From_Scratch-Part1.ayc"               ; 1:08      - Const: 12
 ;      org	adr_ayc: incbin "results/v5/Hocus_Pocus.ayc"                      ; 2:21      - Const: -
 ;      org	adr_ayc: incbin "results/v5/cybernoid.ayc"                        ; 2:21      - Const: 5, 11, 12, 13
@@ -142,7 +140,7 @@ if    _HicksPlayer
 ;      org	adr_ayc: incbin "results/v5/Fractal.ayc"                          ; 3:33      - Const: 12
 ;      org	adr_ayc: incbin "results/v5/Renegade.ayc"                         ; 9:38      - Const: 12
 ;      org	adr_ayc: incbin "results/v5/Solarium.ayc"                         ; 0:51      - Const: 12
-      org	adr_ayc: incbin "results/v5/Wireshar.ayc"                         ; 2:52      - Const: 12
+;      org	adr_ayc: incbin "results/v5/Wireshar.ayc"                         ; 2:52      - Const: 12
 ;      org	adr_ayc: incbin "results/v5/Alienall.ayc"                         ; 1:59      - Const: 12
 ;      org	adr_ayc: incbin "results/v5/Boules_et_bits.ayc"                   ; 3:04      - Const: 12
 ;      org	adr_ayc: incbin "results/v5/Deep_space.ayc"                       ; 4:17      - Const: 12
