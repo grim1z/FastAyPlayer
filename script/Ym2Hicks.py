@@ -562,11 +562,13 @@ class HicksConvertor:
 				print(f"  - Crunch register 5+13: ", end='', flush=True)
 			else:
 				print(f"  - Crunch register {self.RegOrder[r]}: ", end='', flush=True)
-			if self.YmFile.LoopFrame != 0:
+
+			if self.RegOrder[r] == 12 and self.R12IsConst:
+				self.R[r] = []
+			elif self.YmFile.LoopFrame != 0:
 				RegisterData = self.YmFile.Registers[self.RegOrder[r]][0:self.YmFile.LoopFrame]
 				self.R[r] = self.Compressor.compress(RegisterData, False)
 				self.RLoop[r] = len(self.R[r])
-
 				RegisterData = self.YmFile.Registers[self.RegOrder[r]][self.YmFile.LoopFrame:-1]
 				self.R[r] = self.R[r] + self.Compressor.compress(RegisterData, True)
 
@@ -605,10 +607,11 @@ class HicksConvertor:
 			LoopMarker=0x1F
 			for i in range(len(self.RegOrder)):
 				RegisterData = self.YmFile.Registers[self.RegOrder[i]]
-				fd.write(self.R[i])
-				fd.write(LoopMarker.to_bytes(1,"little"))
-				fd.write(RegisterData[-1].to_bytes(1,"little"))
-				fd.write((BufferAddr[i]+self.RLoop[i]).to_bytes(2,"little"))
+				if len(self.R[i]) != 0:
+					fd.write(self.R[i])
+					fd.write(LoopMarker.to_bytes(1,"little"))
+					fd.write(RegisterData[-1].to_bytes(1,"little"))
+					fd.write((BufferAddr[i]+self.RLoop[i]).to_bytes(2,"little"))
 
 				
 ###################################################################################
