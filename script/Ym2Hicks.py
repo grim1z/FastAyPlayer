@@ -569,11 +569,11 @@ class HicksConvertor:
 				RegisterData = self.YmFile.Registers[self.RegOrder[r]][0:self.YmFile.LoopFrame]
 				self.R[r] = self.Compressor.compress(RegisterData, False)
 				self.RLoop[r] = len(self.R[r])
-				RegisterData = self.YmFile.Registers[self.RegOrder[r]][self.YmFile.LoopFrame:-1]
+				RegisterData = self.YmFile.Registers[self.RegOrder[r]][self.YmFile.LoopFrame:]
 				self.R[r] = self.R[r] + self.Compressor.compress(RegisterData, True)
 
 			else:
-				RegisterData = self.YmFile.Registers[self.RegOrder[r]][0:-1]
+				RegisterData = self.YmFile.Registers[self.RegOrder[r]]
 				self.R[r] = self.Compressor.compress(RegisterData, True)
 				self.RLoop[r] = 0
 			print(f"{len(self.YmFile.Registers[self.RegOrder[r]])} -> {len(self.R[r])}")
@@ -601,7 +601,7 @@ class HicksConvertor:
 			BufferAddr[0] = StartAddr + 2 + NR_YM_REGISTERS + 2 * len(self.RegOrder)
 			for i in range(len(self.RegOrder)):
 				fd.write(BufferAddr[i].to_bytes(2,"little"))
-				BufferAddr[i+1] = BufferAddr[i] + len(self.R[i]) + 4
+				BufferAddr[i+1] = BufferAddr[i] + len(self.R[i]) + 3
 
 			# Write: register data + loop marker + start address of register data in memory
 			LoopMarker=0x1F
@@ -610,7 +610,6 @@ class HicksConvertor:
 				if len(self.R[i]) != 0:
 					fd.write(self.R[i])
 					fd.write(LoopMarker.to_bytes(1,"little"))
-					fd.write(RegisterData[-1].to_bytes(1,"little"))
 					fd.write((BufferAddr[i]+self.RLoop[i]).to_bytes(2,"little"))
 
 				

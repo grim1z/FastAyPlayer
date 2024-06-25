@@ -28,10 +28,16 @@ MACRO   SKIP_NOPS	Nops
                                         inc	(hl)    ; WASTE TIME WITH FEW BYTES (3 NOPS - 1 BYTE)
                                         dec	(hl)    ; WASTE TIME WITH FEW BYTES (3 NOPS - 1 BYTE)
                                 else
-                                        if      {Nops}	== 8
+                                        if	{Nops}	== 7
                                                 inc	(hl)    ; WASTE TIME WITH FEW BYTES (3 NOPS - 1 BYTE)
-                                                cp      (hl)
+                                                nop
                                                 dec	(hl)    ; WASTE TIME WITH FEW BYTES (3 NOPS - 1 BYTE)
+                                        else
+                                                if      {Nops}	== 8
+                                                        inc	(hl)    ; WASTE TIME WITH FEW BYTES (3 NOPS - 1 BYTE)
+                                                        cp      (hl)
+                                                        dec	(hl)    ; WASTE TIME WITH FEW BYTES (3 NOPS - 1 BYTE)
+                                                endif
                                         endif
                                 endif
                         endif
@@ -457,14 +463,13 @@ RestartSubCopyFromDict:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         
 DoFramesLoop:
-        ld	(hl), d
-        inc	l
+        dec     sp
         exx
         pop	hl
         ld	sp, hl
         exx
 
-        SKIP_NOPS 6
+        SKIP_NOPS 7
         
         dec	c
         ld	d, c
