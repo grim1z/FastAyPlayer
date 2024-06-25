@@ -1,13 +1,7 @@
 org #3300
 
         DECRUNCH_BUFFER_ADDR_HIGH	equ #C0
-        NR_REGISTERS_TO_DECRUNCH        equ #0B
-        NR_REGISTERS_TO_PLAY	equ NR_REGISTERS_TO_DECRUNCH + 2
-
-        RESTART_COPY_FROM_DICT_MARKER   equ     0
-        RESTART_COPY_LITERAL_MARKER	equ     1
-
-        SKIP_R12	= 1
+        NR_REGISTERS_TO_DECRUNCH        equ #0C
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -137,7 +131,8 @@ CurrentPlayerBuffer = $+1
         exx
         ld	bc, #C680
         exx
-        ld	bc, #F400 + 13  ; This value can be adjusted to increase performance. The lower, the better performance.
+NrRegistersToPlay = $+1
+        ld	bc, #F400       ; Max number of registers to play is written in the C register by the init code.
         ld	de, #0201
 
         ;
@@ -248,18 +243,11 @@ SkipRegister13
         inc	d
         WriteToPSGRegSkip	d, 1
 
-if      SKIP_R12!=1
-        ;
-        ; Write to register 12
-        ;
-        inc	h
-        inc	d
-        ld	a, (hl)
-        WriteToPSGReg   d
-endif
+SkipR12OverwriteJR:
+        ; Playing R12 is very uncommon. No effort has been made to make this case efficient.
+        jr      PlayR12Trampoline
 
-        ld	a, c
-        add	a, a
+ReturnFromPlayR12:
         jr	z, SkipDecrunchTrampoline2
         ld	(NrValuesToDecrunch), a
 
@@ -280,7 +268,8 @@ DecrunchEntryPoint:
 ReLoadDecrunchSavedState  equ	$ + 1
         ld	hl, DecrunchSavedState
         ld	a, l
-        cp	NR_REGISTERS_TO_DECRUNCH * 6
+DecrunchStateLoopValue = $+1
+        cp	0       ; The loop value is written here by the init code.
         jr	nz, SkipBufferReset
         xor	a
 SkipBufferReset:
@@ -369,6 +358,9 @@ SkipDecrunchTrampoline2:
 SkipDecrunchTrampoline:
         jp      SkipDecrunch
 
+PlayR12Trampoline:
+        jp	PlayR12
+        
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;
@@ -549,6 +541,19 @@ SkipDecrunchLoop:
 
         jp      DecrunchFinalCode
 
+PlayR12:
+        ;
+        ; Write to register 12
+        ;
+        inc	h
+        inc	d
+        ld	a, (hl)
+        WriteToPSGReg	d
+        ld	a, c
+        add	a, a
+        jp	ReturnFromPlayR12
+
+        print	"Player size: ", $-#3300
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -561,9 +566,37 @@ SkipDecrunchLoop:
         ;
         ; Params:
         ;       HL: Music data
-
 PlayerInit:
         ld	(ReturnAddress), ix
+
+        ld	xl, NR_REGISTERS_TO_DECRUNCH
+
+        ;
+        ; Load Skip R12 flag
+        ;
+        breakpoint
+        ld	a, (hl)
+        inc     hl
+        or	a
+        jr	z, NoSkipR12
+        dec     xl
+        ld	iy, #8779
+        ld	(SkipR12OverwriteJR), iy
+NoSkipR12:
+
+        ld	a, xl   ; Let N = Number of registers to decrunch
+        add	a, a    ; A = 2 * N
+        ld	b, a    ; B = 2 * N
+        add	a, a    ; A = 4 * N
+        add     b       ; A = 6 * N
+        ld	(DecrunchStateLoopValue), a
+
+        ;
+        ; Load number of registers to play
+        ;
+        ld	a, (hl)
+        inc     hl
+        ld	(NrRegistersToPlay), a
 
         ;
         ; Initialize registers
@@ -594,7 +627,7 @@ InitRegisterLoop:               ; TODO: pourquoi ne pas utiliser la macro WriteT
         ; Initialize decrunch save state array.
         ;
         ld	de, DecrunchSavedState
-        ld	b, NR_REGISTERS_TO_DECRUNCH
+        ld	b, xl
         xor	a
         exa
         ld	a, DECRUNCH_BUFFER_ADDR_HIGH
@@ -639,7 +672,7 @@ InitDecrunchStateLoop:
         ;
         ld	hl, DecrunchSavedState
         ld	(ReLoadDecrunchSavedState), hl
-        ld	b, NR_REGISTERS_TO_DECRUNCH
+        ld	b, xl
 InitDecrunchBufferLoop:
         push	bc
         ld	(SaveStack), sp

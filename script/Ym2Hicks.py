@@ -305,6 +305,8 @@ class HicksConvertor:
 	# Constructor
 	#
 	def __init__(self, FileName):
+		self.R12IsConst = False
+		self.RegistersToPlay = 13
 		self.FileName = FileName
 		self.Compressor = LzssCompressor(256, 31)
 #			         0, 2, (1+3), 4, (5+13), 6, 7, 8, 9, 10, 11, 12]
@@ -368,8 +370,12 @@ class HicksConvertor:
 			Constant = True
 			for f in range(len(self.YmFile.Registers[r])):
 				if self.YmFile.Registers[r][f] != self.YmFile.Registers[r][0]:
+					if r == 12:
+						print(f"Frame {f}: {self.YmFile.Registers[r][f]} / {self.YmFile.Registers[r][0]}")
 					Constant = False
 			if Constant:
+				if r == 12:
+					self.R12IsConst = True					
 				if ConstRegTxt == "":
 					ConstRegTxt = ConstRegTxt + f"R{r}"
 				else:
@@ -450,11 +456,11 @@ class HicksConvertor:
 		if (self.YmFile.Registers[6][Current] & 0x80) != 0x80:	# Register 13
 			Changes = Changes + 1
 
-		if Changes > 12:
-			Changes = Changes - self.DelayOneRegister(Current, Next)
-
-		if Changes > 11:
-			Changes = Changes - self.DelayOneRegister(Current, Next)
+ #		if Changes > 12:
+ #			Changes = Changes - self.DelayOneRegister(Current, Next)
+ #
+ #		if Changes > 11:
+ #			Changes = Changes - self.DelayOneRegister(Current, Next)
 
 		return Changes
 
@@ -477,6 +483,8 @@ class HicksConvertor:
 		print("  - Frames / Number of registers modified")
 		for i in range(0, 15):
 			print(f"     * {i:2}: {MaxChanges[i]}")
+			if MaxChanges[i] != 0:
+				self.RegistersToPlay = i
 
 	#
 	# Insert markers for repeating value (used to quickly avoid to program a register)
@@ -574,13 +582,21 @@ class HicksConvertor:
 	def Write(self, StartAddr):
 				
 		with open(self.FileName, "wb") as fd:
+			# Write "SkipR12" flag
+			fd.write(self.R12IsConst.to_bytes(1,"little"))
+			if not self.R12IsConst:
+				self.RegistersToPlay = self.RegistersToPlay + 1
+
+			# Write number of registers to play
+			fd.write(self.RegistersToPlay.to_bytes(1,"little"))
+
 			# Write: initial values for each register
 			for i in range(NR_YM_REGISTERS):
 				fd.write(self.InitVal[i].to_bytes(1,"little"))
 
 			# Write: address of buffers for each register
 			BufferAddr = {}
-			BufferAddr[0] = StartAddr + NR_YM_REGISTERS + 2 * len(self.RegOrder)
+			BufferAddr[0] = StartAddr + 2 + NR_YM_REGISTERS + 2 * len(self.RegOrder)
 			for i in range(len(self.RegOrder)):
 				fd.write(BufferAddr[i].to_bytes(2,"little"))
 				BufferAddr[i+1] = BufferAddr[i] + len(self.R[i]) + 4
