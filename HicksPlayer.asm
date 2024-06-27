@@ -215,12 +215,11 @@ SkipR1_3Return:
         ;
         inc     d
         ld	a, (hl)
-        dec	l
-        cp	(hl)
-        jr	z, SkipR5
+        inc     h
+        bit	5, (hl)                 ; Check if we have to program register 5.
+        jr	nz, SkipR5
         WriteToPSGReg	d
 SkipR5:
-        inc     l
 
         ;
         ; Write to register 13
@@ -229,8 +228,7 @@ SkipR5:
         rra
         rra
         rra
-        inc	h
-        bit	7, (hl)                 ; Check if we have to program register 13.
+        bit	6, (hl)                 ; Check if we have to program register 13.
         ld	e, 13
         jr	nz, SkipRegister13
         WriteToPSGReg	e
@@ -239,8 +237,12 @@ SkipRegister13
         ;
         ; Write to register 6
         ;
-        inc     d
-        WriteToPSGRegSkip	d, b
+        inc	d
+        ld	a, (hl)
+        bit	7, a
+        jr	nz, SkipRegister6      
+        WriteToPSGReg	d
+SkipRegister6:
         inc	h
 
         ;

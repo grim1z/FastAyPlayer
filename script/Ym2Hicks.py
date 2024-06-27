@@ -316,10 +316,16 @@ class HicksConvertor:
 		for i in range (len(R1)):
 			R1[i] = (R2[i] & 0x0f) << 4 | (R1[i] & 0x0f)
 
+	def AdjustR6ForR5(self, R6, R5):
+		for i in range (1, len(R6)):
+			if R5[i] == R5[i-1]:
+				R6[i] = R6[i] | 0x20
+
 	def AdjustR6ForR13(self, R6, R13):
 		for i in range (len(R6)):
+#			if (i != 0 and R13[i] == R13[i-1]) or (R13[i] == 0xFF):   # TODO: On peut delta-play le R13 ???
 			if R13[i] == 0xFF:
-				R6[i] = R6[i] | 0x80
+				R6[i] = R6[i] | 0x40
 				R13[i] = R13[i-1]				# V2 optimisation
 
 	def SmoothRegisters(self, PeriodLow, PeriodHigh, Volume, Mixer, Voice):
@@ -437,9 +443,11 @@ class HicksConvertor:
 		# Register[3] handled with register 1
 		if self.YmFile.Registers[4][Current] != 1:
 			Changes = Changes + 1
-		if self.YmFile.Registers[5][Current] != self.YmFile.Registers[5][Prev]:
+		if (self.YmFile.Registers[6][Current] & 0x80) == 0: # Register 6
 			Changes = Changes + 1
-		if self.YmFile.Registers[6][Current] != 0xF4:
+		if (self.YmFile.Registers[6][Current] & 0x40) == 0: # Register 13
+			Changes = Changes + 1
+		if (self.YmFile.Registers[6][Current] & 0x20) == 0: # Register 5
 			Changes = Changes + 1
 		if self.YmFile.Registers[7][Current] != 0xF4:
 			Changes = Changes + 1
@@ -452,8 +460,6 @@ class HicksConvertor:
 		if self.YmFile.Registers[11][Current] != 1:
 			Changes = Changes + 1
 		if self.YmFile.Registers[12][Current] != self.YmFile.Registers[12][Prev]:
-			Changes = Changes + 1
-		if (self.YmFile.Registers[6][Current] & 0x80) != 0x80:	# Register 13
 			Changes = Changes + 1
 
  #		if Changes > 12:
@@ -536,18 +542,20 @@ class HicksConvertor:
 		self.MergeRegisters(self.YmFile.Registers[1], self.YmFile.Registers[3])
 		print(f"  - Merge registers 5+13")
 		self.MergeRegisters(self.YmFile.Registers[5], self.YmFile.Registers[13])
-		print(f"  - Adjust R6 register for R13 no reset case")
-		self.AdjustR6ForR13(self.YmFile.Registers[6], self.YmFile.Registers[13])		
 		print(f"  - Preprocess delta-play (delta-play percentage)")
 		self.PrecaclNoReprog(0, 0x01)
 		self.PrecaclNoReprog(2, 0x01)
 		self.PrecaclNoReprog(4, 0x01)
-		self.PrecaclNoReprog(6, 0xF4)
+		self.PrecaclNoReprog(6, 0x80)
 		self.PrecaclNoReprog(7, 0xF4)
 		self.PrecaclNoReprog(8, 0xF4)
 		self.PrecaclNoReprog(9, 0xF4)
 		self.PrecaclNoReprog(10, 0xF4)
 		self.PrecaclNoReprog(11, 0x01)
+
+		print(f"  - Adjust R6 register for R13 no reset case")
+		self.AdjustR6ForR5(self.YmFile.Registers[6], self.YmFile.Registers[5])
+		self.AdjustR6ForR13(self.YmFile.Registers[6], self.YmFile.Registers[13])
 
 		self.CountAndLimitRegChanges()
 
