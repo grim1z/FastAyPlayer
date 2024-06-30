@@ -467,11 +467,12 @@ DoFramesLoop:
         dec     sp
         exx
         pop	hl
+DataBufferReset = $+1
+        ld	bc, #0000
+        add	hl, bc
         ld	sp, hl
         exx
-
-        SKIP_NOPS 7
-        
+        nop
         dec	c
         ld	d, c
         jr	z, DecrunchFinalize
@@ -479,8 +480,8 @@ DoFramesLoop:
         SKIP_NOPS 2
 
         dec	ly
-        jr	nz, FetchNewCrunchMarker
-        jp      ExitMainDecrunchLoop
+        jp	nz, FetchNewCrunchMarker
+        jp      ExitMainDecrunchLoop2
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -533,9 +534,11 @@ EnterStabilizeLoop:
         jr	StabilizeLoop
 
 ExitMainDecrunchLoop:
+        nop
+ExitMainDecrunchLoop2:
         xor	a
         ld	d, a
-        SKIP_NOPS 6
+        SKIP_NOPS 5
         dec	c
         jr	nz, ExitMainDecrunchLoop
 
@@ -604,8 +607,15 @@ SkipRegister12:
 
         ;
         ; Params:
-        ;       HL: Music data
+        ;       HL: Music crunched data buffer
+        ;       IX: RET address to jump at the end of the player execution.
 PlayerInit:
+        ld	a, l
+        ld	(DataBufferLow), a
+        ld	a, h
+        ld	(DataBufferHigh), a
+        ld	(DataBufferReset), hl
+
         ld	(BackupReturnAddress), ix
         ld	ix, ReturnFromDecrunchCodeToInitCode
         ld	(ReturnAddress), ix
@@ -685,8 +695,21 @@ InitDecrunchStateLoop:
         inc	de
         ld	(de), a
         inc	de
-        ldi                     ; Copy register crunched data address
-        ldi
+
+breakpoint
+        ld	a, (hl)
+DataBufferLow = $+1
+        add	a, #00
+        ld	(de), a
+        inc	de
+        inc	hl
+        ld	a, (hl)
+DataBufferHigh = $+1
+        adc	a, #00
+        ld	(de), a
+        inc	de
+        inc	hl
+        xor     a
         djnz	InitDecrunchStateLoop
 
         ;

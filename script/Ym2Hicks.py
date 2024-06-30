@@ -475,6 +475,10 @@ class HicksConvertor:
 	#
 	def CountAndLimitRegChanges(self):
 		MaxChanges = [0] * 15
+		MaxAvg = 0
+		Sum = 0
+		WindowSize = 200
+		SumArray = [0] * WindowSize
 
 		for i in range (1, self.YmFile.NbFrames):
 			if i == self.YmFile.NbFrames - 1:				
@@ -484,8 +488,15 @@ class HicksConvertor:
 			Changes = self.CountAndLimitRegChangesOneFrame(i, i-1, NextIndex)
 			MaxChanges[Changes] = MaxChanges[Changes] + 1
 
+			if i >= WindowSize:
+				Sum = Sum - SumArray[i % WindowSize]
+			Sum = Sum + Changes
+			SumArray[i % WindowSize] = Changes
+			MaxAvg = max (MaxAvg, Sum/WindowSize)
+
 		Changes = self.CountAndLimitRegChangesOneFrame(self.YmFile.NbFrames - 1, self.YmFile.LoopFrame, self.YmFile.LoopFrame + 1)
 		MaxChanges[Changes] = MaxChanges[Changes] + 1
+		print("  - Max average: ", MaxAvg)
 		print("  - Frames / Number of registers modified")
 		for i in range(0, 15):
 			print(f"     * {i:2}: {MaxChanges[i]}")
@@ -589,13 +600,16 @@ class HicksConvertor:
 	#
 	# Write the file
 	#
-	def Write(self, StartAddr):
+	def Write(self):
 				
 		with open(self.FileName, "wb") as fd:
 			# Write "SkipR12" flag
 			fd.write(self.R12IsConst.to_bytes(1,"little"))
+
+			# The player behaves badly if R12 is not constant. Hopefully, this is a very uncommon case.
+			# However, in this case, we have to take a large secutiry gap to reach a sufficient decrunch ratio :(
 			if not self.R12IsConst:
-				self.RegistersToPlay = self.RegistersToPlay + 1
+				self.RegistersToPlay = self.RegistersToPlay + 3
 
 			# Write number of registers to play
 			fd.write(self.RegistersToPlay.to_bytes(1,"little"))
@@ -605,11 +619,11 @@ class HicksConvertor:
 				fd.write(self.InitVal[i].to_bytes(1,"little"))
 
 			# Write: address of buffers for each register
-			BufferAddr = {}
-			BufferAddr[0] = StartAddr + 2 + NR_YM_REGISTERS + 2 * len(self.RegOrder)
+			BufferOffset = {}
+			BufferOffset[0] = 2 + NR_YM_REGISTERS + 2 * len(self.RegOrder)
 			for i in range(len(self.RegOrder)):
-				fd.write(BufferAddr[i].to_bytes(2,"little"))
-				BufferAddr[i+1] = BufferAddr[i] + len(self.R[i]) + 3
+				fd.write(BufferOffset[i].to_bytes(2,"little"))
+				BufferOffset[i+1] = BufferOffset[i] + len(self.R[i]) + 3
 
 			# Write: register data + loop marker + start address of register data in memory
 			LoopMarker=0x1F
@@ -618,7 +632,7 @@ class HicksConvertor:
 				if len(self.R[i]) != 0:
 					fd.write(self.R[i])
 					fd.write(LoopMarker.to_bytes(1,"little"))
-					fd.write((BufferAddr[i]+self.RLoop[i]).to_bytes(2,"little"))
+					fd.write((BufferOffset[i]+self.RLoop[i]).to_bytes(2,"little"))
 
 				
 ###################################################################################
@@ -637,7 +651,7 @@ if __name__ == "__main__":
 
 		Convertor = HicksConvertor(sys.argv[2])
 		Convertor.Convert(Song)
-		Convertor.Write(0x3800)
+		Convertor.Write()
 
 #	except Exception as ErrorMsg:
 #		sys.exit(f"Error: {ErrorMsg}")
