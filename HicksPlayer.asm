@@ -606,6 +606,8 @@ SkipRegister12:
         ; Params:
         ;       HL: Music data
 PlayerInit:
+        ld	(BackupReturnAddress), ix
+        ld	ix, ReturnFromDecrunchCodeToInitCode
         ld	(ReturnAddress), ix
 
         ld	xl, NR_REGISTERS_TO_DECRUNCH
@@ -688,19 +690,6 @@ InitDecrunchStateLoop:
         djnz	InitDecrunchStateLoop
 
         ;
-        ; Backup and replace decrunch final code by a jump to the init code.
-        ;
-        ld	hl, DecrunchFinalCode
-        ld	de, CodeBackup
-        ld	bc, #0003
-        ldir
-
-        ld	hl, JumpToInitCode
-        ld	de, DecrunchFinalCode
-        ld	bc, #0003
-        ldir
-
-        ;
         ; Loop to initialize decrunch buffers with 1, 2, 3,..., N values
         ;
         ld	hl, DecrunchSavedState
@@ -720,16 +709,12 @@ ReturnFromDecrunchCodeToInitCode:
         ld	hl, DecrunchSavedState
         ld	(ReLoadDecrunchSavedState), hl
 
-        ;
-        ; Restore decrunch final code.
-        ;
-        ld	hl, CodeBackup
-        ld	de, DecrunchFinalCode
-        ld	bc, #0003
-        ldir
-
         ld	a, 4
         ld	(NrDecrunchLoop), a
+
+BackupReturnAddress = $+1
+        ld	hl, #0000
+        ld	(ReturnAddress), hl
 
         ret
 
@@ -745,8 +730,3 @@ ReturnFromDecrunchCodeToInitCode:
 align   256
 DecrunchSavedState:
         ds	72
-
-CodeBackup:                   ; Init data
-        ds	3
-JumpToInitCode:               ; Init data
-        jp	ReturnFromDecrunchCodeToInitCode ; TODO: utiliser le JP du DecrunchFinalCode pour simplifier le code
