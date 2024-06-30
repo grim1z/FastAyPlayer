@@ -582,7 +582,12 @@ PlayR12:
         inc	h
         inc	d
         ld	a, (hl)
+        dec     l
+        cp	(hl)
+        jr	z, SkipRegister12
         WriteToPSGReg	d
+SkipRegister12:
+        dec     l
         ld	a, c
         add	a, a
         jp	ReturnFromPlayR12
