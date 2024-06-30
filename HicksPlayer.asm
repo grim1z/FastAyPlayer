@@ -313,13 +313,12 @@ SkipBufferReset:
         ld	sp, hl
         ld	a, e    ; Backup current position of the player in the decrunched buffer
         pop	de      ; d = restart if not null       e = Lower byte of source address if restart copy from windows. Undef otherwise.
-        pop	bc      ; Current position in decrunch buffer
+        pop	bc      ; Current position in decrunch buffer (B=low address byte / C = High address byte)
         sub	b       ; Compute distance between player read position and current position in decrunch buffer.
         pop	hl      ; Current position in crunched data buffer
         ld	(ReLoadDecrunchSavedState), sp
 
         cp	28      ; Leave a security gap between the current decrunch position and the player position.
-SkipDecrunchJump:
         jr	c, SkipDecrunchTrampoline
         
         ld	a, h
@@ -344,7 +343,7 @@ SkipDecrunchJump:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 NrValuesToDecrunch = $+1
-        ld	c, 200
+        ld	c, 220
 NrDecrunchLoop = $+2
         ld	ly, 50
         inc	d
@@ -609,7 +608,6 @@ PlayerInit:
         ;
         ; Load Skip R12 flag
         ;
-        breakpoint
         ld	a, (hl)
         inc     hl
         or	a
@@ -697,11 +695,6 @@ InitDecrunchStateLoop:
         ld	bc, #0003
         ldir
 
-        ld	hl, (SkipDecrunchJump)
-        ld	(SkipDecrunchRestore), hl
-        ld	hl, 0
-        ld	(SkipDecrunchJump), hl
-
         ;
         ; Loop to initialize decrunch buffers with 1, 2, 3,..., N values
         ;
@@ -711,6 +704,7 @@ InitDecrunchStateLoop:
 InitDecrunchBufferLoop:
         push	bc
         ld	(SaveStack), sp
+        ld	e, #FF
         jp	DecrunchEntryPoint
 SaveStack equ $ + 1
 ReturnFromDecrunchCodeToInitCode:
@@ -728,13 +722,6 @@ ReturnFromDecrunchCodeToInitCode:
         ld	de, DecrunchFinalCode
         ld	bc, #0003
         ldir
-
-        ;
-        ; Restore "skip decrunch" jump
-        ;
-SkipDecrunchRestore = $+1
-        ld	hl, 0
-        ld	(SkipDecrunchJump), hl
 
         ld	a, 4
         ld	(NrDecrunchLoop), a
