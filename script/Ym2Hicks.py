@@ -376,8 +376,6 @@ class HicksConvertor:
 			Constant = True
 			for f in range(len(self.YmFile.Registers[r])):
 				if self.YmFile.Registers[r][f] != self.YmFile.Registers[r][0]:
-					if r == 12:
-						print(f"Frame {f}: {self.YmFile.Registers[r][f]} / {self.YmFile.Registers[r][0]}")
 					Constant = False
 			if Constant:
 				if r == 12:
@@ -400,7 +398,11 @@ class HicksConvertor:
 			return 1000
 		if VolumeRegister and ((Register[Current] & 0x80) == (Register[Next] & 0x80)):
 			return 1000
-		for i in range (Current-1, 0, -1):
+		if Current == 0:
+			Start = self.YmFile.NbFrames - 1
+		else:
+			Start = Current-1
+		for i in range (Start, 0, -1):
 			if Register[i] != MarkerValue:
 				return abs(Register[i] - Register[Current])
 		return 1000
@@ -494,7 +496,7 @@ class HicksConvertor:
 			SumArray[i % WindowSize] = Changes
 			MaxAvg = max (MaxAvg, Sum/WindowSize)
 
-		Changes = self.CountAndLimitRegChangesOneFrame(self.YmFile.NbFrames - 1, self.YmFile.LoopFrame, self.YmFile.LoopFrame + 1)
+		Changes = self.CountAndLimitRegChangesOneFrame(self.YmFile.LoopFrame, self.YmFile.NbFrames - 1, self.YmFile.LoopFrame + 1)
 		MaxChanges[Changes] = MaxChanges[Changes] + 1
 		print("  - Max average: ", MaxAvg)
 		print("  - Frames / Number of registers modified")

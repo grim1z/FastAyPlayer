@@ -158,7 +158,7 @@ MEND
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 CurrentPlayerBuffer = $+1
-        ld	hl, DECRUNCH_BUFFER_ADDR_HIGH << 8
+        ld	hl, (DECRUNCH_BUFFER_ADDR_HIGH << 8) + 1
         ld	a, l
         inc     a
         ld	(CurrentPlayerBuffer), a
@@ -651,26 +651,17 @@ NoSkipR12:
         ;
         ; Initialize registers
         ;
-        xor     a
-        ld	b, #f4
         exx
-        ld	b, #f6
-        ld	hl, #c080
-        exx        
-InitRegisterLoop:               ; TODO: pourquoi ne pas utiliser la macro WriteToPsgReg ? Juste pour la lisibilité.
-        out	(c), a          ; #F4 = Reg number
+        ld	bc, #C680
         exx
-        out	(c), h          ; #F6 = #C0
-        out	(c), 0          ; #F6 = #00
-        exx
-        inc	b
-        outi                    ; #F4 = Reg Value
-        exx
-        out	(c), l          ; #F6 = #80
-        out	(c), 0          ; #F6 = #00
-        exx
-        inc	a
-        cp      14
+        ld	bc, #F400
+        ld	de, #000E
+InitRegisterLoop:
+        ld	a, (hl)
+        inc	hl
+        WriteToPSGReg	d
+        inc	d
+        dec	e
         jr	nz, InitRegisterLoop
 
         ;
@@ -678,12 +669,12 @@ InitRegisterLoop:               ; TODO: pourquoi ne pas utiliser la macro WriteT
         ;
         ld	de, DecrunchSavedState
         ld	b, xl
-        xor	a
         exa
         ld	a, DECRUNCH_BUFFER_ADDR_HIGH
         exa
 
 InitDecrunchStateLoop:
+        xor	a
         ld	(de), a
         inc	de
         ld	(de), a
@@ -696,7 +687,6 @@ InitDecrunchStateLoop:
         ld	(de), a
         inc	de
 
-breakpoint
         ld	a, (hl)
 DataBufferLow = $+1
         add	a, #00
@@ -709,7 +699,6 @@ DataBufferHigh = $+1
         ld	(de), a
         inc	de
         inc	hl
-        xor     a
         djnz	InitDecrunchStateLoop
 
         ;
