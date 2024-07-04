@@ -98,7 +98,7 @@ class YmReader:
 		print(f"  - Frame rate:      {self.FrameRate}")
 		print(f"  - Loop Frame:      {self.LoopFrame}")
 		print(f"  - Extra Data size: {ExtraDataSize}")
-		
+
 		if (ExtraDataSize != 0):
 			raise Exception("Non null extra Data size is not supported")
 
@@ -482,21 +482,24 @@ class HicksConvertor:
 		WindowSize = 200
 		SumArray = [0] * WindowSize
 
-		for i in range (1, self.YmFile.NbFrames):
-			if i == self.YmFile.NbFrames - 1:				
+		for i in range (0, self.YmFile.NbFrames):
+			if i == self.YmFile.NbFrames - 1:
 				NextIndex = self.YmFile.LoopFrame
 			else:
 				NextIndex = i+1
 			Changes = self.CountAndLimitRegChangesOneFrame(i, i-1, NextIndex)
 			MaxChanges[Changes] = MaxChanges[Changes] + 1
 
+			# Compute average register changes on a sliding window for the current position.
 			if i >= WindowSize:
 				Sum = Sum - SumArray[i % WindowSize]
 			Sum = Sum + Changes
 			SumArray[i % WindowSize] = Changes
 			MaxAvg = max (MaxAvg, Sum/WindowSize)
 
-		Changes = self.CountAndLimitRegChangesOneFrame(self.YmFile.LoopFrame, self.YmFile.NbFrames - 1, self.YmFile.LoopFrame + 1)
+		if self.YmFile.LoopFrame != 0:
+			Changes = self.CountAndLimitRegChangesOneFrame(self.YmFile.LoopFrame, self.YmFile.NbFrames - 1, self.YmFile.LoopFrame + 1)
+
 		MaxChanges[Changes] = MaxChanges[Changes] + 1
 		print("  - Max average: ", MaxAvg)
 		print("  - Frames / Number of registers modified")
@@ -508,16 +511,25 @@ class HicksConvertor:
 	#
 	# Insert markers for repeating value (used to quickly avoid to program a register)
 	#
-	def PrecaclNoReprog(self, RegId, MarkerValue):
+	def PrecaclDeltaPlay(self, RegId, MarkerValue):
 		Register = self.YmFile.Registers[RegId]
-		PrevVal = Register[len(Register)-1]
+		LastVal = Register[-1]
+		PrevVal = LastVal
 		Count = 0
-		for r in range(0, len(Register)):
-			if (Register[r] == PrevVal):
-				Register[r] = MarkerValue
+		for f in range(0, len(Register)):
+			DeltaPlay = True
+			if Register[f] != PrevVal:
+				DeltaPlay = False
+			# Special case for a non 0 loop frame. The current value must also be equal to the one in last frame to enable delta-play.
+			if self.YmFile.LoopFrame != 0 and \
+			   f == self.YmFile.LoopFrame  and \
+			   Register[f] != LastVal:
+				DeltaPlay = False
+			if DeltaPlay:
+				Register[f] = MarkerValue
 				Count = Count + 1
 			else:
-				PrevVal = Register[r] 
+				PrevVal = Register[f]
 		print(f"     * R{RegId}: {round(100 * Count/len(Register), 1)}%")
 
 	def BackupFirstValue(self):
@@ -556,15 +568,15 @@ class HicksConvertor:
 		print(f"  - Merge registers 5+13")
 		self.MergeRegisters(self.YmFile.Registers[5], self.YmFile.Registers[13])
 		print(f"  - Preprocess delta-play (delta-play percentage)")
-		self.PrecaclNoReprog(0, 0x01)
-		self.PrecaclNoReprog(2, 0x01)
-		self.PrecaclNoReprog(4, 0x01)
-		self.PrecaclNoReprog(6, 0x80)
-		self.PrecaclNoReprog(7, 0xF4)
-		self.PrecaclNoReprog(8, 0xF4)
-		self.PrecaclNoReprog(9, 0xF4)
-		self.PrecaclNoReprog(10, 0xF4)
-		self.PrecaclNoReprog(11, 0x01)
+		self.PrecaclDeltaPlay(0, 0x01)
+		self.PrecaclDeltaPlay(2, 0x01)
+		self.PrecaclDeltaPlay(4, 0x01)
+		self.PrecaclDeltaPlay(6, 0x80)
+		self.PrecaclDeltaPlay(7, 0xF4)
+		self.PrecaclDeltaPlay(8, 0xF4)
+		self.PrecaclDeltaPlay(9, 0xF4)
+		self.PrecaclDeltaPlay(10, 0xF4)
+		self.PrecaclDeltaPlay(11, 0x01)
 
 		print(f"  - Adjust R6 register for R13 no reset case")
 		self.AdjustR6ForR5(self.YmFile.Registers[6], self.YmFile.Registers[5])
