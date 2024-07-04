@@ -158,7 +158,7 @@ MEND
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 CurrentPlayerBuffer = $+1
-        ld	hl, (DECRUNCH_BUFFER_ADDR_HIGH << 8) + 1
+        ld	hl, DECRUNCH_BUFFER_ADDR_HIGH << 8
         ld	a, l
         inc     a
         ld	(CurrentPlayerBuffer), a

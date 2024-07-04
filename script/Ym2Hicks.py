@@ -520,10 +520,11 @@ class HicksConvertor:
 			DeltaPlay = True
 			if Register[f] != PrevVal:
 				DeltaPlay = False
+			# Special case for 1st mixer value. Avoid a delta-play since the mixer is forced to mute in init values.
+			if f == 0 and RegId == 7:
+				DeltaPlay = False
 			# Special case for a non 0 loop frame. The current value must also be equal to the one in last frame to enable delta-play.
-			if self.YmFile.LoopFrame != 0 and \
-			   f == self.YmFile.LoopFrame  and \
-			   Register[f] != LastVal:
+			if self.YmFile.LoopFrame != 0 and f == self.YmFile.LoopFrame and Register[f] != LastVal:
 				DeltaPlay = False
 			if DeltaPlay:
 				Register[f] = MarkerValue
@@ -532,10 +533,11 @@ class HicksConvertor:
 				PrevVal = Register[f]
 		print(f"     * R{RegId}: {round(100 * Count/len(Register), 1)}%")
 
-	def BackupFirstValue(self):
-		self.InitVal = {}
+	def BackupLastValue(self):
+		self.LastVal = {}
 		for i in range (NR_YM_REGISTERS):
-			self.InitVal[i] = self.YmFile.Registers[i][0]
+			self.LastVal[i] = self.YmFile.Registers[i][-1]
+		self.LastVal[7] = 0x3F
 
 	#
 	# Convert the given YM file to the Hicks format
@@ -547,7 +549,7 @@ class HicksConvertor:
 
 		print("\nPreprocessing data:")
 
-		self.BackupFirstValue()
+		self.BackupLastValue()
 
 		print(f"  - Smooth registers R0 to R5")
 		self.SmoothRegisters(self.YmFile.Registers[0], self.YmFile.Registers[1], self.YmFile.Registers[8], self.YmFile.Registers[7], 1)
@@ -630,7 +632,7 @@ class HicksConvertor:
 
 			# Write: initial values for each register
 			for i in range(NR_YM_REGISTERS):
-				fd.write(self.InitVal[i].to_bytes(1,"little"))
+				fd.write(self.LastVal[i].to_bytes(1,"little"))
 
 			# Write: address of buffers for each register
 			BufferOffset = {}
