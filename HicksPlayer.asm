@@ -314,10 +314,9 @@ SkipBufferReset:
         ld	a, e    ; Backup current position of the player in the decrunched buffer
         pop	de      ; d = restart if not null       e = Lower byte of source address if restart copy from windows. Undef otherwise.
         pop	bc      ; Current position in decrunch buffer (B=low address byte / C = High address byte)
-        sub	b       ; Compute distance between player read position and current position in decrunch buffer.
         pop	hl      ; Current position in crunched data buffer
         ld	(ReLoadDecrunchSavedState), sp
-
+        sub	b       ; Compute distance between player read position and current position in decrunch buffer.
         cp	28      ; Leave a security gap between the current decrunch position and the player position.
         jr	c, SkipDecrunchTrampoline
         
