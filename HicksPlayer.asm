@@ -1,6 +1,5 @@
 org #3300
 
-        DECRUNCH_BUFFER_ADDR_HIGH	equ #C0
         NR_REGISTERS_TO_DECRUNCH        equ #0C
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -158,7 +157,7 @@ MEND
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 CurrentPlayerBuffer = $+1
-        ld	hl, DECRUNCH_BUFFER_ADDR_HIGH << 8
+        ld	hl, #0000
         ld	a, l
         inc     a
         ld	(CurrentPlayerBuffer), a
@@ -607,6 +606,7 @@ SkipRegister12:
         ;
         ; Params:
         ;       HL: Music crunched data buffer
+        ;       D:  High byte of decrunch buffer
         ;       IX: RET address to jump at the end of the player execution.
 PlayerInit:
         ld	a, l
@@ -647,6 +647,8 @@ NoSkipR12:
         inc     hl
         ld	(NrRegistersToPlay), a
 
+        push	de
+
         ;
         ; Initialize registers
         ;
@@ -663,15 +665,17 @@ InitRegisterLoop:
         dec	e
         jr	nz, InitRegisterLoop
 
+        pop	de
+
         ;
         ; Initialize decrunch save state array.
         ;
+        exa
+        ld	a, d
+        ld	(CurrentPlayerBuffer+1), a
+        exa
         ld	de, DecrunchSavedState
         ld	b, xl
-        exa
-        ld	a, DECRUNCH_BUFFER_ADDR_HIGH
-        exa
-
 InitDecrunchStateLoop:
         xor	a
         ld	(de), a
