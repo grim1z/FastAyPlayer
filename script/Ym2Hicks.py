@@ -276,6 +276,7 @@ class LzssCompressor:
 			if Match:
 				#
 				# Make sure that 2 following tokens decrunch at least X values
+				# TODO: We can adjust the value MinDecrunchRatio if necessary, but probably useless
 				#
 				MatchDistance, MatchLength = Match
 				if Literal and len(Literal) + MatchLength < MinDecrunchRatio:
@@ -366,7 +367,7 @@ class HicksConvertor:
 
 			# Smooth volume if tone is off
 			# In this case, volume is not used by the PSG.
-			if ToneOff:
+			if ToneOff and NoiseOff:
 				Volume[i] = VolMode | PrevVol
 
 	#
@@ -640,7 +641,6 @@ class HicksConvertor:
 	# Write the file
 	#
 	def Write(self):
-				
 		with open(self.FileName, "wb") as fd:
 			# Write "SkipR12" flag
 			fd.write(self.R12IsConst.to_bytes(1,"little"))
