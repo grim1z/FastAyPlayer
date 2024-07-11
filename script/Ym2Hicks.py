@@ -30,6 +30,37 @@ def hprint(data):
 
 ###################################################################################
 #
+# Compute stat on a sliding window
+#
+###################################################################################
+
+class WindowStat:
+	#
+	# Constructor
+	#
+	def __init__(self, WindowSize):
+		self.Size = WindowSize
+		self.Index = 0
+		self.SumArray = [0] * WindowSize
+		self.MinAvg = 1000
+		self.MaxAvg = 0
+		self.Sum = 0
+		self.Loop = False
+
+	def AddValue(self, Val):
+		if self.Loop:
+			self.MinAvg = min (self.MinAvg, sum(self.SumArray) / self.Size)
+			self.MaxAvg = max (self.MaxAvg, sum(self.SumArray) / self.Size)
+			self.Sum = self.Sum - self.SumArray[self.Index]
+
+		self.Sum = self.Sum + Val
+		self.SumArray[self.Index] = Val
+		self.Index = (self.Index + 1) % self.Size		
+		if self.Index == 0:
+			self.Loop = True
+
+###################################################################################
+#
 # YM File Reader
 #
 ###################################################################################
@@ -150,7 +181,7 @@ class YmReader:
 			if ((R8[i] & 0x10) == 0) and ((R9[i] & 0x10) == 0) and ((R10[i] & 0x10) == 0):
 				R11[i] = R11[i-1]
 				R12[i] = R12[i-1]
-				R13[i] = R13[i-1]		# V2 optimisation
+				R13[i] = R13[i-1]
 
 	#
 	# Import YM File
@@ -223,15 +254,17 @@ class LzssCompressor:
 		Distance = Distance - 1
 		Buffer = Buffer + Distance.to_bytes(1, "little")
 		
-		return Buffer
+		return Buffer		
 
 	# Copy Literal: Save NLit-1 + Lit
 	# Copy from Buffer: Save BufSize +1D + (Offset - 1)
 	#      --> Min Buffer size = 3	
 	def compress(self, Data, LoopStart):
+		Stats = WindowStat(20)
 		i = 0
 		Literal=b''
 		Crunch=b''
+		MinDecrunchRatio = 2
 		if LoopStart:
 			PrevLen1 = PrevLen2 = 1
 		else:
@@ -242,26 +275,12 @@ class LzssCompressor:
 
 			if Match:
 				#
-				# This is a pure heuristic optimization which limits the bad impact of the "4 tokens constaint"
+				# Make sure that 2 following tokens decrunch at least X values
 				#
 				MatchDistance, MatchLength = Match
-				if Literal and len(Literal) + MatchLength < 7:
+				if Literal and len(Literal) + MatchLength < MinDecrunchRatio:
 					Match = False
-				elif PrevLen2 + MatchLength < 7:
-					Match = False
-
-			if Match:
-				#
-				# Here is the "4 tokens constaint": we make sure that we can always decrunch enough bytes with 4 tokens.
-				# We assume the worth case scenario where the 1st token is a decrunch restart producing only 1 byte.
-				MatchDistance, MatchLength = Match
-				Remain = len(Data) - i - MatchLength
-
-				if Literal and (PrevLen2 >= 0) and (1 + PrevLen2 + len(Literal) + MatchLength < self.SlotLength):
-					Match = False
-				if Literal and (PrevLen1 >= 0) and (1 + PrevLen1 + PrevLen2 + len(Literal) < self.SlotLength):
-					Match = False
-				if not Literal and (PrevLen1 >= 0) and (1 + PrevLen1 + PrevLen2 + MatchLength < self.SlotLength):
+				elif PrevLen2 + MatchLength < MinDecrunchRatio:
 					Match = False
 
 			if Match:
@@ -270,9 +289,11 @@ class LzssCompressor:
 					PrevLen1 = PrevLen2
 					PrevLen2 = len(Literal)
 					Crunch = self.EncodeLiteral(Crunch, Literal)
+					Stats.AddValue(len(Literal))
 					Literal = b''
 
 				Crunch = self.EncodeMatch(Crunch, MatchDistance, MatchLength)
+				Stats.AddValue(MatchLength)
 
 				PrevLen1 = PrevLen2
 				PrevLen2 = MatchLength
@@ -282,6 +303,7 @@ class LzssCompressor:
 				Literal = Literal + Data[i:i+1]
 				if len(Literal) == self.LitMaxSize:
 					Crunch = self.EncodeLiteral(Crunch, Literal)
+					Stats.AddValue(len(Literal))
 					Literal = b''
 					PrevLen1 = -1
 					PrevLen2 = -1
@@ -292,7 +314,7 @@ class LzssCompressor:
 			PrevLen1 = PrevLen2
 			PrevLen2 = len(Literal)
 
-		return Crunch
+		return Crunch, Stats
 
 ###################################################################################
 #
@@ -323,10 +345,9 @@ class HicksConvertor:
 
 	def AdjustR6ForR13(self, R6, R13):
 		for i in range (len(R6)):
-#			if (i != 0 and R13[i] == R13[i-1]) or (R13[i] == 0xFF):   # TODO: On peut delta-play le R13 ???
 			if R13[i] == 0xFF:
 				R6[i] = R6[i] | 0x40
-				R13[i] = R13[i-1]				# V2 optimisation
+				R13[i] = R13[i-1]
 
 	def SmoothRegisters(self, PeriodLow, PeriodHigh, Volume, Mixer, Voice):
 		VoiceToneMask = 1 << (Voice-1)
@@ -340,13 +361,13 @@ class HicksConvertor:
 
 			# Smooth Period if volume is 0 or tone if off.
 			if Volume[i] == 0 or ToneOff:
-				PeriodLow[i] = PeriodLow[i-1]		# V5 optimisation
+				PeriodLow[i] = PeriodLow[i-1]
 				PeriodHigh[i] = PeriodHigh[i-1]
 
 			# Smooth volume if tone is off
 			# In this case, volume is not used by the PSG.
 			if ToneOff:
-				Volume[i] = VolMode | PrevVol			# V4 optimization
+				Volume[i] = VolMode | PrevVol
 
 	#
 	# Switch all 1 to 0 for period low byte. The 1 value will later be use to mark a "delta-play".
@@ -365,7 +386,7 @@ class HicksConvertor:
 		for i in range (1, len(Noise)):
 			NoiseOff = (Mixer[i] & 0b00111000) == 0b00111000
 			if NoiseOff:
-				Noise[i] = Noise[i-1]				# V3 optimization
+				Noise[i] = Noise[i-1]
 
 	#
 	# Count the number of constant registers
@@ -464,11 +485,11 @@ class HicksConvertor:
 		if self.YmFile.Registers[12][Current] != self.YmFile.Registers[12][Prev]:
 			Changes = Changes + 1
 
- #		if Changes > 12:
- #			Changes = Changes - self.DelayOneRegister(Current, Next)
- #
- #		if Changes > 11:
- #			Changes = Changes - self.DelayOneRegister(Current, Next)
+		if Changes > 12:
+			Changes = Changes - self.DelayOneRegister(Current, Next)
+ 
+		if Changes > 11:
+			Changes = Changes - self.DelayOneRegister(Current, Next)
 
 		return Changes
 
@@ -477,11 +498,10 @@ class HicksConvertor:
 	#
 	def CountAndLimitRegChanges(self):
 		MaxChanges = [0] * 15
-		MaxAvg = 0
-		Sum = 0
-		WindowSize = 200
-		SumArray = [0] * WindowSize
 
+		Stats={}
+		for i in range(11):
+			Stats[i] = WindowStat(220)
 		for i in range (0, self.YmFile.NbFrames):
 			if i == self.YmFile.NbFrames - 1:
 				NextIndex = self.YmFile.LoopFrame
@@ -489,19 +509,16 @@ class HicksConvertor:
 				NextIndex = i+1
 			Changes = self.CountAndLimitRegChangesOneFrame(i, i-1, NextIndex)
 			MaxChanges[Changes] = MaxChanges[Changes] + 1
-
-			# Compute average register changes on a sliding window for the current position.
-			if i >= WindowSize:
-				Sum = Sum - SumArray[i % WindowSize]
-			Sum = Sum + Changes
-			SumArray[i % WindowSize] = Changes
-			MaxAvg = max (MaxAvg, Sum/WindowSize)
+			Stats[i%11].AddValue(Changes)
 
 		if self.YmFile.LoopFrame != 0:
 			Changes = self.CountAndLimitRegChangesOneFrame(self.YmFile.LoopFrame, self.YmFile.NbFrames - 1, self.YmFile.LoopFrame + 1)
 
 		MaxChanges[Changes] = MaxChanges[Changes] + 1
-		print("  - Max average: ", MaxAvg)
+		MaxAvg = 0
+		for i in range(11):
+			MaxAvg = max(MaxAvg, Stats[i].MaxAvg)
+		print("  - Worst case average register changes: ", round(MaxAvg, 2))
 		print("  - Frames / Number of registers modified")
 		for i in range(0, 15):
 			print(f"     * {i:2}: {MaxChanges[i]}")
@@ -513,18 +530,18 @@ class HicksConvertor:
 	#
 	def PrecaclDeltaPlay(self, RegId, MarkerValue):
 		Register = self.YmFile.Registers[RegId]
-		LastVal = Register[-1]
-		PrevVal = LastVal
+		InitVal = Register[-1]
+		PrevVal = InitVal
 		Count = 0
 		for f in range(0, len(Register)):
 			DeltaPlay = True
 			if Register[f] != PrevVal:
 				DeltaPlay = False
-			# Special case for 1st mixer value. Avoid a delta-play since the mixer is forced to mute in init values.
-			if f == 0 and RegId == 7:
+			# Special case for 1st mixer and volume values. Avoid a delta-play since the mixer and volume are forced to mute in init values.
+			if f == 0 and RegId >= 7 and RegId <= 10:
 				DeltaPlay = False
 			# Special case for a non 0 loop frame. The current value must also be equal to the one in last frame to enable delta-play.
-			if self.YmFile.LoopFrame != 0 and f == self.YmFile.LoopFrame and Register[f] != LastVal:
+			if self.YmFile.LoopFrame != 0 and f == self.YmFile.LoopFrame and Register[f] != InitVal:
 				DeltaPlay = False
 			if DeltaPlay:
 				Register[f] = MarkerValue
@@ -533,11 +550,14 @@ class HicksConvertor:
 				PrevVal = Register[f]
 		print(f"     * R{RegId}: {round(100 * Count/len(Register), 1)}%")
 
-	def BackupLastValue(self):
-		self.LastVal = {}
+	def BackupInitValue(self):
+		self.InitVal = {}
 		for i in range (NR_YM_REGISTERS):
-			self.LastVal[i] = self.YmFile.Registers[i][-1]
-		self.LastVal[7] = 0x3F
+			self.InitVal[i] = self.YmFile.Registers[i][0]
+		self.InitVal[7] = 0x3F
+		self.InitVal[8] = 0
+		self.InitVal[9] = 0
+		self.InitVal[10] = 0
 
 	#
 	# Convert the given YM file to the Hicks format
@@ -549,7 +569,7 @@ class HicksConvertor:
 
 		print("\nPreprocessing data:")
 
-		self.BackupLastValue()
+		self.BackupInitValue()
 
 		print(f"  - Smooth registers R0 to R5")
 		self.SmoothRegisters(self.YmFile.Registers[0], self.YmFile.Registers[1], self.YmFile.Registers[8], self.YmFile.Registers[7], 1)
@@ -589,8 +609,9 @@ class HicksConvertor:
 		print("\nCrunching:")
 
 		NrRegisters = len(self.RegOrder)
-		self.Compressor.SlotLength = 16
 		for r in range(NrRegisters):
+			MinAvg = 1000
+			MaxAvg = 0
 			if self.RegOrder[r] == 1:
 				print(f"  - Crunch register 1+3: ", end='', flush=True)
 			elif self.RegOrder[r] == 5:
@@ -602,16 +623,18 @@ class HicksConvertor:
 				self.R[r] = []
 			elif self.YmFile.LoopFrame != 0:
 				RegisterData = self.YmFile.Registers[self.RegOrder[r]][0:self.YmFile.LoopFrame]
-				self.R[r] = self.Compressor.compress(RegisterData, False)
+				self.R[r], Stats = self.Compressor.compress(RegisterData, False)
+				MinAvg = Stats.MinAvg
+				MaxAvg = Stats.MaxAvg
 				self.RLoop[r] = len(self.R[r])
 				RegisterData = self.YmFile.Registers[self.RegOrder[r]][self.YmFile.LoopFrame:]
-				self.R[r] = self.R[r] + self.Compressor.compress(RegisterData, True)
-
+				Remain, Stats = self.Compressor.compress(RegisterData, True)
+				self.R[r] = self.R[r] + Remain
 			else:
 				RegisterData = self.YmFile.Registers[self.RegOrder[r]]
-				self.R[r] = self.Compressor.compress(RegisterData, True)
+				self.R[r], Stats = self.Compressor.compress(RegisterData, True)
 				self.RLoop[r] = 0
-			print(f"{len(self.YmFile.Registers[self.RegOrder[r]])} -> {len(self.R[r])}")
+			print(f"{len(self.YmFile.Registers[self.RegOrder[r]])} -> {len(self.R[r])} Decrunch ratio (min/max) {min(MinAvg, Stats.MinAvg)} / {max(MaxAvg, Stats.MaxAvg)}")
 
 	#
 	# Write the file
@@ -632,7 +655,7 @@ class HicksConvertor:
 
 			# Write: initial values for each register
 			for i in range(NR_YM_REGISTERS):
-				fd.write(self.LastVal[i].to_bytes(1,"little"))
+				fd.write(self.InitVal[i].to_bytes(1,"little"))
 
 			# Write: address of buffers for each register
 			BufferOffset = {}
