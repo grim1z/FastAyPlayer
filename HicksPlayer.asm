@@ -609,15 +609,9 @@ SkipRegister12:
         ;       D:  High byte of decrunch buffer
         ;       IX: RET address to jump at the end of the player execution.
 PlayerInit:
-        ld	a, l
-        ld	(DataBufferLow), a
-        ld	a, h
-        ld	(DataBufferHigh), a
+        push    ix
+        push	hl
         ld	(DataBufferReset), hl
-
-        ld	(BackupReturnAddress), ix
-        ld	ix, ReturnFromDecrunchCodeToInitCode
-        ld	(ReturnAddress), ix
 
         ld	xl, NR_REGISTERS_TO_DECRUNCH
 
@@ -675,7 +669,8 @@ InitRegisterLoop:
         ld	(CurrentPlayerBuffer+1), a
         exa
         ld	de, DecrunchSavedState
-        ld	b, xl
+        ld	xh, xl
+        pop     bc
 InitDecrunchStateLoop:
         xor	a
         ld	(de), a
@@ -691,44 +686,56 @@ InitDecrunchStateLoop:
         inc	de
 
         ld	a, (hl)
-DataBufferLow = $+1
-        add	a, #00
+        add	a, c
         ld	(de), a
         inc	de
         inc	hl
         ld	a, (hl)
-DataBufferHigh = $+1
-        adc	a, #00
+        adc	a, b
         ld	(de), a
         inc	de
         inc	hl
-        djnz	InitDecrunchStateLoop
+        dec     xh
+        jr	nz, InitDecrunchStateLoop
 
         ;
         ; Loop to initialize decrunch buffers with 1, 2, 3,..., N values
         ;
-        ld	hl, DecrunchSavedState
-        ld	(ReLoadDecrunchSavedState), hl
-        ld	b, xl
+        
+        ;       Get the value of PC (small trick for PIC code). We need PC to update the player return address.
+        exx
+        ld	hl, (#0000)
+        ex	de, hl
+        ld	hl, #E9E1
+        ld	(#0000), hl
+        call	#0000
+RetFromGetPC:
+        ;       Update the player return adress
+        ld	bc, ReturnFromDecrunchCodeToInitCode - RetFromGetPC
+        add	hl, bc
+        ld	(ReturnAddress), hl
+        ex	de, hl
+        ld	(#0000), hl
+        exx
+
+        exx:    ld hl, sp:      exx  ; Backup SP
+
+        ld	xh, xl
 InitDecrunchBufferLoop:
-        push	bc
-        ld	(SaveStack), sp
         ld	e, #FF
         jp	DecrunchEntryPoint
-SaveStack equ $ + 1
+
 ReturnFromDecrunchCodeToInitCode:
         ld	sp, #0000
-        pop	bc
-        djnz	InitDecrunchBufferLoop
+        dec     xh
+        jr	nz, InitDecrunchBufferLoop
 
-        ld	hl, DecrunchSavedState
-        ld	(ReLoadDecrunchSavedState), hl
+        exx:    ld sp, hl:      exx  ; Restore SP
 
         ld	a, 4
         ld	(NrDecrunchLoop), a
 
-BackupReturnAddress = $+1
-        ld	hl, #0000
+        pop     hl
         ld	(ReturnAddress), hl
 
         ret
