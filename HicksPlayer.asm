@@ -152,6 +152,13 @@ MACRO   WriteHLToPlayerCodeWithReloc	Offset
         ld	(iy + 1), h
 MEND
 
+MACRO   WriteHLToInitCodeWithReloc	Offset
+        ld	iy, {Offset} - PlayerInit
+        add	iy, de
+        ld	(iy + 0), l
+        ld	(iy + 1), h
+MEND
+
 RelocBase:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -665,11 +672,6 @@ RetFromGetPC2:
         push	hl      ; Address of crunched data
 
         ;
-        ; Initialize DataBufferReset in the player code. 
-        ;
-        WriteHLToPlayerCodeWithReloc DataBufferReset
-
-        ;
         ; Do player code relocation
         ;
         ld	ix, #0000: add ix, sp      ; Backup SP
@@ -701,6 +703,11 @@ RelocMainLoop:
 
         exx
         ld	sp, ix                  ; Restore SP
+
+        ;
+        ; Initialize DataBufferReset in the player code. 
+        ;
+        WriteHLToPlayerCodeWithReloc	DataBufferReset
 
         ld	xl, NR_REGISTERS_TO_DECRUNCH
 
@@ -779,11 +786,14 @@ InitRegisterLoop:
         ld	xh, xl
         pop     bc
 InitDecrunchStateLoop:
+        ; Write #0000 (restart decrunch flags)
         xor	a
         ld	(de), a
         inc	de
         ld	(de), a
         inc	de
+
+        ; Write initial position in decrunch (dest) buffer.
         exa
         ld	(de), a
         inc     a
@@ -792,6 +802,7 @@ InitDecrunchStateLoop:
         ld	(de), a
         inc	de
 
+        ; Write initial position in crunched (src) buffer.
         ld	a, (hl)
         add	a, c
         ld	(de), a
@@ -802,6 +813,7 @@ InitDecrunchStateLoop:
         ld	(de), a
         inc	de
         inc	hl
+
         dec     xh
         jr	nz, InitDecrunchStateLoop
 
@@ -809,11 +821,18 @@ InitDecrunchStateLoop:
         ;       Update the player return adress to return in the following init code.
         ;
         exx
-        pop	hl              ; Base address of PlayerInit
-        ld	de, ReturnFromDecrunchCodeToInitCode - PlayerInit
+        pop	de              ; Base address of PlayerInit
+        ld	hl, ReturnFromDecrunchCodeToInitCode - PlayerInit
         add	hl, de
         WriteHLToPlayerCodeWithReloc	ReturnAddress
 
+        ;
+        ;       Compute address of DecrunchEntryPoint
+        ;
+        ld	hl, DecrunchEntryPoint - RelocBase
+        add	hl, bc
+breakpoint
+        WriteHLToInitCodeWithReloc JumpToDecrunchEntryPoint
         ld	hl, sp          ; Backup SP
         exx
 
@@ -822,10 +841,10 @@ InitDecrunchStateLoop:
         ;
         ld	xh, xl
 InitDecrunchBufferLoop:
-breakpoint
         ld	iy, #FFFF
         ld	e, #FF
-        jp	DecrunchEntryPoint
+JumpToDecrunchEntryPoint =$+1
+        jp	#0000
 
 ReturnFromDecrunchCodeToInitCode:
         ld	sp, #0000
