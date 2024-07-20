@@ -16,6 +16,7 @@
       adr_ayc	equ #3800
 
       _HicksPlayer	= 1
+      _DebugFap	= 1
 
 ;
 ; --- Macros ---
@@ -127,9 +128,23 @@ savSp:
 
 if    _HicksPlayer
 
+if    _DebugFap
+      include	"FapMacro.asm"
+
+      org	adr_play
+FapPlay:
+      include	"FapPlay.asm"
+
+      org	adr_init
+FapInit:
+      include	"FapInit.asm"
+
+else
+
       org	adr_init: incbin "out/fapinit.bin"
       org	adr_play: incbin "out/fapplay.bin"
-      print	"Player size:", $-adr_play
+
+endif
 
 ;      org	adr_ayc: incbin "results/v7/Short-Loop0.ayc"
       org	adr_ayc: incbin "results/v7/From_Scratch-Part1.ayc"               ; 1:08      - Const: 12

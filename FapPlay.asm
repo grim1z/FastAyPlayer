@@ -169,7 +169,7 @@ SkipBufferReset:
         ld	sp, hl
         ld	a, e    ; Backup current position of the player in the decrunched buffer
         pop	de      ; d = restart if not null       e = Lower byte of source address if restart copy from windows. Undef otherwise.
-        pop	bc      ; Current position in decrunch buffer (B=low address byte / C = High address byte)
+        pop	bc      ; Current position in decrunch buffer (address bytes are swaped : B=low address byte / C = High address byte)
         pop	hl      ; Current position in crunched data buffer
 Reloc4 = $+2
         ld	(ReLoadDecrunchSavedState), sp
@@ -288,8 +288,14 @@ RestartCopyLiteral:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+        ; D != 0 --> Restart a paused decrunch
+        ;   if bit 7(H) = 1
+        ;      Restart Copy Literal     D = remaining length    E = unknown
+        ;   else
+        ;      Restart Copy From Dict   D = remaining length    E = Lower byte
+
 RestartPausedDecrunch:
-        rla
+        rla             ; if Bit 7 is set -> restart a Copy Literal
         jr	nc, RestartPausedCopyFromDict
 
         ;

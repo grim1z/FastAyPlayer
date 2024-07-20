@@ -1,4 +1,6 @@
         NR_REGISTERS_TO_DECRUNCH	equ #0C
+
+        _DebugFap        =	1
         
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -58,7 +60,9 @@ RelocMainLoop:
         inc	hl
         ld	d, (hl)
         ex	de, hl
+if      _DebugFap!=1
         add	hl, bc
+endif
         ex	de, hl
         ld	(hl), d
         dec	hl
@@ -197,7 +201,6 @@ InitDecrunchStateLoop:
         ;
         ld	hl, DecrunchEntryPoint - FapPlay
         add	hl, bc
-breakpoint
         WriteHLToInitCodeWithReloc JumpToDecrunchEntryPoint
         ld	hl, sp          ; Backup SP
         exx
