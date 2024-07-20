@@ -153,7 +153,6 @@ MACRO   WriteHLToPlayerCodeWithReloc	Offset
 MEND
 
 RelocBase:
-        jp	PlayerInit
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -320,7 +319,8 @@ Reloc3 = $+1
         ;
 DecrunchEntryPoint:
 ReLoadDecrunchSavedState  equ	$ + 1
-        ld	hl, DecrunchSavedState
+ReLoadDecrunchSavedStatehigh  equ	$ + 2
+        ld	hl, #0000
         ld	a, l
 DecrunchStateLoopValue = $+1
         cp	0       ; The loop value is written here by the init code.
@@ -741,13 +741,11 @@ NoSkipR12:
         exa
         Write8ToPlayerCodeWithReloc	CurrentPlayerBufferHigh, a
         exa
-        exx
 
         ;
         ; Initialize registers
         ;
-        exx
-        push    bc
+        push	bc              ; Backup player base address
         ld	bc, #C680
         exx
         ld	bc, #F400
@@ -760,15 +758,24 @@ InitRegisterLoop:
         dec	e
         jr	nz, InitRegisterLoop
 
+        ;
+        ;       Compute the address of the decrunch state array. The array is located right after the decrunch buffers.
+        ;
         exx
-        pop	bc
+        pop	bc              ; Restore player base address
+        exa
+        add	a, xl
+        Write8ToPlayerCodeWithReloc	ReLoadDecrunchSavedStateHigh, a
         exx
+
+        ld	d, a
+        sub	a, xl
+        exa
+        ld	e, 0            ; DE = address of the decrunch state array
 
         ;
         ; Initialize decrunch save state array.
         ;
-
-        ld	de, DecrunchSavedState
         ld	xh, xl
         pop     bc
 InitDecrunchStateLoop:
@@ -815,6 +822,8 @@ InitDecrunchStateLoop:
         ;
         ld	xh, xl
 InitDecrunchBufferLoop:
+breakpoint
+        ld	iy, #FFFF
         ld	e, #FF
         jp	DecrunchEntryPoint
 
@@ -837,7 +846,7 @@ ReturnFromDecrunchCodeToInitCode:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                                               ;;
-;;                                          PLAYER DATA                                          ;;
+;;                                        RELOCATION TABLE                                       ;;
 ;;                                                                                               ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -856,8 +865,3 @@ RelocTable:
         dw	Reloc11 - RelocBase
         dw	Reloc12 - RelocBase
 RelocTableEnd:
-
-; TODO: Réutiliser l'espace du header de format auquel on ajoute un peu d'espace pour compléter.
-align   256
-DecrunchSavedState:
-        ds	72

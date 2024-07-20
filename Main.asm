@@ -10,8 +10,9 @@
       ORG	#3000      
       RUN	$
 
-      adr_play	equ #3300        ; code player (<&400)
-      buf_ayc	equ #C000        ; buffers decrunch (&e00 max)
+      adr_init	equ PlayerInit   ; init player
+      adr_play	equ #3300        ; code player
+      buf_ayc	equ #C000        ; buffers decrunch
       adr_ayc	equ #3800
 
       _HicksPlayer	= 1
@@ -28,12 +29,12 @@ MACRO ini_play	ReturnAddr
       ld	bc, adr_play
       ld	de, {ReturnAddr}
       ld	hl, adr_ayc
-      call	adr_play
+      call	adr_init
 MEND
 
       ; * Exe player *               
       MACRO	exe_play
-            jp	adr_play + 3          
+            jp	adr_play
       MEND
 
 else
