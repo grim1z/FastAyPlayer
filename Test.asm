@@ -10,8 +10,8 @@
       ORG	#3000      
       RUN	$
 
-      adr_init	equ PlayerInit   ; init player
-      adr_play	equ #3300        ; code player
+      adr_init	equ #9300         ; init player
+      adr_play	equ #9500        ; code player
       buf_ayc	equ #C000        ; buffers decrunch
       adr_ayc	equ #3800
 
@@ -127,8 +127,8 @@ savSp:
 
 if    _HicksPlayer
 
-      org	adr_play
-      include     "HicksPlayer.asm"
+      org	adr_init: incbin "out/fapinit.bin"
+      org	adr_play: incbin "out/fapplay.bin"
       print	"Player size:", $-adr_play
 
 ;      org	adr_ayc: incbin "results/v7/Short-Loop0.ayc"

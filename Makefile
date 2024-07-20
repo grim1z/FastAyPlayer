@@ -2,17 +2,25 @@ ACE = /opt/tools/cpc/ACE/AceDL
 RASM = rasm
 
 TARGET = out/TestZic.sna
-ASM_SRC = $(shell find . -name '*.asm' -o -name '*.mac')
 
 all: $(TARGET)
 
-$(TARGET): $(ASM_SRC)
+$(TARGET): Test.asm out/fapinit.bin
 	mkdir -p out
 ifdef WSL_DISTRO_NAME
-	cmd.exe /c "D:\Dropbox\RetroGaming\CPC\rasm.exe -v -void -twe -xr -sb -ss -eo -sa Main.asm -oi $(TARGET)"
+	cmd.exe /c "D:\Dropbox\RetroGaming\CPC\rasm.exe -v -ss -sb -sa -void -twe -xr -eo Test.asm -oi $(TARGET)"
 else
-	rasm -d -v -void -twe -xr -sb -eo -ss -sa Main.asm -oi $(TARGET)
+	rasm -d -v -ss -sb -sa -void -twe -xr -eo Test.asm -oi $(TARGET)
 endif
+
+out/fapinit.bin: Fap*.asm
+	mkdir -p out
+ifdef WSL_DISTRO_NAME
+	cmd.exe /c "D:\Dropbox\RetroGaming\CPC\rasm.exe -v -void -twe -xr -eo FapMain.asm -oi /tmp/player.bin"
+else
+	rasm -d -v -void -twe -xr -eo FapMain.asm -oi /tmp/player.bin
+endif
+
 
 clean:
 	rm -f out/*
