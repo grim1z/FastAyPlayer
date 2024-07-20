@@ -249,4 +249,5 @@ RelocTable:
         dw	Reloc10 - FapPlay
         dw	Reloc11 - FapPlay
         dw	Reloc12 - FapPlay
+        dw	Reloc13 - FapPlay
 RelocTableEnd:
