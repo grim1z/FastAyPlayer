@@ -23,10 +23,11 @@
 if    _HicksPlayer
 
       ; * Init player *
-MACRO	ini_play ReturnAddr
+MACRO ini_play	ReturnAddr
+      ld	a, #D0
+      ld	bc, adr_play
+      ld	de, {ReturnAddr}
       ld	hl, adr_ayc
-      ld	ix, {ReturnAddr}
-      ld	d, #D0
       call	adr_play
 MEND
 

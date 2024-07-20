@@ -105,7 +105,8 @@ MACRO   _CopyLiteralLoop   LoopReg ; 2 + 10 * N NOPS
         inc	l
         SKIP_NOPS 2
         dec     {LoopReg}
-        jp      nz, @CopyLoop
+        jr	nz, @CopyLoop
+        nop
         dec     sp
 @ExitLoop:
 MEND
@@ -138,6 +139,20 @@ MACRO   WriteToPSGRegSkip	RegNumber, SkipVal
 @Skip:
 MEND
 
+MACRO   Write8ToPlayerCodeWithReloc	Offset, Value
+        ld	hl, {Offset} - RelocBase
+        add	hl, bc
+        ld	(hl), {Value}
+MEND
+
+MACRO   WriteHLToPlayerCodeWithReloc	Offset
+        ld	iy, {Offset} - RelocBase
+        add	iy, bc
+        ld	(iy + 0), l
+        ld	(iy + 1), h
+MEND
+
+RelocBase:
         jp	PlayerInit
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -156,11 +171,13 @@ MEND
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-CurrentPlayerBuffer = $+1
+CurrentPlayerBufferLow = $+1
+CurrentPlayerBufferHigh = $+2
         ld	hl, #0000
         ld	a, l
-        inc     a
-        ld	(CurrentPlayerBuffer), a
+        inc	a
+Reloc1 = $+1
+        ld	(CurrentPlayerBufferLow), a
         exx
         ld	bc, #C680
         exx
@@ -187,6 +204,7 @@ NrRegistersToPlay = $+1
         ld	a, (hl)
         dec     l
         cp	(hl)
+Reloc2 = $+1
         jp	z, SkipR1_3
         WriteToPSGReg   e
 
@@ -284,6 +302,7 @@ SkipR12OverwriteJR:
 
 ReturnFromPlayR12:
         jr	z, SkipDecrunchTrampoline2
+Reloc3 = $+1
         ld	(NrValuesToDecrunch), a
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -314,6 +333,7 @@ SkipBufferReset:
         pop	de      ; d = restart if not null       e = Lower byte of source address if restart copy from windows. Undef otherwise.
         pop	bc      ; Current position in decrunch buffer (B=low address byte / C = High address byte)
         pop	hl      ; Current position in crunched data buffer
+Reloc4 = $+2
         ld	(ReLoadDecrunchSavedState), sp
         sub	b       ; Compute distance between player read position and current position in decrunch buffer.
         cp	28      ; Leave a security gap between the current decrunch position and the player position.
@@ -382,16 +402,20 @@ RestartCopyFromDict:
 
         dec	ly
         jr	nz, FetchNewCrunchMarker
+Reloc5 = $+1
         jp      ExitMainDecrunchLoop
 
 SkipDecrunchTrampoline2:
         ld	a, 15
+Reloc6 = $+1
         jp	SkipDecrunchLoop
 
 SkipDecrunchTrampoline:
+Reloc7 = $+1
         jp      SkipDecrunch
 
 PlayR12Trampoline:
+Reloc8 = $+1
         jp	PlayR12
         
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -444,7 +468,8 @@ RestartPausedCopyFromDict:
         ld	a, d
         cp	c
         ld	d, h
-        jp	nc, RestartSubCopyFromDict
+        jr	nc, RestartSubCopyFromDict
+        nop
 
         _UpdateNrCopySlot	(void)          ; 4 NOPS
         jr	RestartCopyFromDict
@@ -478,8 +503,9 @@ DataBufferReset = $+1
         SKIP_NOPS 2
 
         dec	ly
+Reloc9 = $+1
         jp	nz, FetchNewCrunchMarker
-        jp      ExitMainDecrunchLoop2
+        jr      ExitMainDecrunchLoop2
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -549,6 +575,7 @@ SaveDecrunchState:
         ld	c, h
         ld	h, a
         add	hl, sp
+Reloc10 = $+2
         ld	sp, (ReLoadDecrunchSavedState)
         push	hl      ; Save current position in crunched data buffer
         push	bc      ; Save current position in decrunch buffer
@@ -562,10 +589,12 @@ ReturnAddress = $+1
         jp	#0000
 
 SkipR1_3:
-        SKIP_NOPS 3
+        SKIP_NOPS	3
+Reloc11 = $+1
         jp      SkipR1_3Return
         
 SkipDecrunch:
+Reloc12 = $+1
         ld	a, (NrValuesToDecrunch)
         add	a, 11
         SKIP_NOPS 6
@@ -573,8 +602,7 @@ SkipDecrunchLoop:
         SKIP_NOPS 8
         dec	a
         jr	nz, SkipDecrunchLoop
-
-        jp      DecrunchFinalCode
+        jr      DecrunchFinalCode
 
 PlayR12:
         ;
@@ -591,9 +619,12 @@ SkipRegister12:
         dec     l
         ld	a, c
         add	a, a
+Reloc9 = $+1
         jp	ReturnFromPlayR12
 
         print	"Player size: ", $-#3300
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -605,13 +636,71 @@ SkipRegister12:
 
         ;
         ; Params:
+        ;       A:  High byte of decrunch buffer
+        ;       BC: Address of the player code
+        ;       DE: RET address to jump at the end of the player execution.
         ;       HL: Music crunched data buffer
-        ;       D:  High byte of decrunch buffer
-        ;       IX: RET address to jump at the end of the player execution.
 PlayerInit:
-        push    ix
-        push	hl
-        ld	(DataBufferReset), hl
+        exa             ; Backup A for later use
+        push	de      ; Address to return from the player
+
+        ;
+        ;       Get the value of PC (small trick for PIC code). We need it for some PIC code.
+        ;
+        exx
+        ld	de, (#0000)     ; Backup bytes from #0000
+        ld	hl, #E9E1       ; Write POP HL; JP (HL)
+        ld	(#0000), hl
+        call	#0000
+RetFromGetPC2:
+        ld	(#0000), de     ; Restore bytes
+
+        ; Compute address of PlayerInit base address
+        ld	iy, PlayerInit - RetFromGetPC2
+        ex	de, hl
+        add	iy, de
+        push	iy              ; Push for future use
+        exx
+
+        push	hl      ; Address of crunched data
+
+        ;
+        ; Initialize DataBufferReset in the player code. 
+        ;
+        WriteHLToPlayerCodeWithReloc DataBufferReset
+
+        ;
+        ; Do player code relocation
+        ;
+        ld	ix, #0000: add ix, sp      ; Backup SP
+
+        push	bc      ; Pass BC to BC' using push / pop
+        exx
+        pop     bc
+
+        ld	de, RelocTable - PlayerInit
+        add	iy, de
+        ld	sp, iy
+        ld	a, (RelocTableEnd - RelocTable) / 2
+
+RelocMainLoop:
+        pop     hl
+        add	hl, bc
+        ld	e, (hl)
+        inc	hl
+        ld	d, (hl)
+        ex	de, hl
+;        add	hl, bc
+        ex	de, hl
+        ld	(hl), d
+        dec	hl
+        ld	(hl), e
+
+        dec	a
+        jr	nz, RelocMainLoop
+
+        exx
+        ld	sp, ix                  ; Restore SP
 
         ld	xl, NR_REGISTERS_TO_DECRUNCH
 
@@ -622,31 +711,43 @@ PlayerInit:
         inc     hl
         or	a
         jr	z, NoSkipR12
-        dec     xl
-        ld	iy, #8779
-        ld	(SkipR12OverwriteJR), iy
-NoSkipR12:
 
+        ; Let skip the R12 play.
+        dec     xl
+        exx
+        ld	hl, #8779       ; Overwrite JR to PlayR12 with some instructions
+        WriteHLToPlayerCodeWithReloc    SkipR12OverwriteJR
+        exx
+
+NoSkipR12:
         ld	a, xl   ; Let N = Number of registers to decrunch
         add	a, a    ; A = 2 * N
         ld	b, a    ; B = 2 * N
         add	a, a    ; A = 4 * N
-        add     b       ; A = 6 * N
-        ld	(DecrunchStateLoopValue), a
+        add	b       ; A = 6 * N
+
+        exx
+        Write8ToPlayerCodeWithReloc	DecrunchStateLoopValue, a
+        exx
 
         ;
         ; Load number of registers to play
         ;
         ld	a, (hl)
-        inc     hl
-        ld	(NrRegistersToPlay), a
+        inc	hl
 
-        push	de
+        exx
+        Write8ToPlayerCodeWithReloc	NrRegistersToPlay, a
+        exa
+        Write8ToPlayerCodeWithReloc	CurrentPlayerBufferHigh, a
+        exa
+        exx
 
         ;
         ; Initialize registers
         ;
         exx
+        push    bc
         ld	bc, #C680
         exx
         ld	bc, #F400
@@ -659,15 +760,14 @@ InitRegisterLoop:
         dec	e
         jr	nz, InitRegisterLoop
 
-        pop	de
+        exx
+        pop	bc
+        exx
 
         ;
         ; Initialize decrunch save state array.
         ;
-        exa
-        ld	a, d
-        ld	(CurrentPlayerBuffer+1), a
-        exa
+
         ld	de, DecrunchSavedState
         ld	xh, xl
         pop     bc
@@ -699,27 +799,20 @@ InitDecrunchStateLoop:
         jr	nz, InitDecrunchStateLoop
 
         ;
-        ; Loop to initialize decrunch buffers with 1, 2, 3,..., N values
+        ;       Update the player return adress to return in the following init code.
         ;
-        
-        ;       Get the value of PC (small trick for PIC code). We need PC to update the player return address.
         exx
-        ld	hl, (#0000)
-        ex	de, hl
-        ld	hl, #E9E1
-        ld	(#0000), hl
-        call	#0000
-RetFromGetPC:
-        ;       Update the player return adress
-        ld	bc, ReturnFromDecrunchCodeToInitCode - RetFromGetPC
-        add	hl, bc
-        ld	(ReturnAddress), hl
-        ex	de, hl
-        ld	(#0000), hl
+        pop	hl              ; Base address of PlayerInit
+        ld	de, ReturnFromDecrunchCodeToInitCode - PlayerInit
+        add	hl, de
+        WriteHLToPlayerCodeWithReloc	ReturnAddress
+
+        ld	hl, sp          ; Backup SP
         exx
 
-        exx:    ld hl, sp:      exx  ; Backup SP
-
+        ;
+        ; Loop to initialize decrunch buffers
+        ;
         ld	xh, xl
 InitDecrunchBufferLoop:
         ld	e, #FF
@@ -730,13 +823,14 @@ ReturnFromDecrunchCodeToInitCode:
         dec     xh
         jr	nz, InitDecrunchBufferLoop
 
-        exx:    ld sp, hl:      exx  ; Restore SP
+        exx:    ld sp, hl       ; Restore SP
 
-        ld	a, 4
-        ld	(NrDecrunchLoop), a
+        Write8ToPlayerCodeWithReloc NrDecrunchLoop, 4
 
-        pop     hl
-        ld	(ReturnAddress), hl
+        pop	hl
+        WriteHLToPlayerCodeWithReloc	ReturnAddress
+
+        exx
 
         ret
 
@@ -747,6 +841,21 @@ ReturnFromDecrunchCodeToInitCode:
 ;;                                                                                               ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+RelocTable:
+        dw	Reloc1 - RelocBase
+        dw	Reloc2 - RelocBase
+        dw	Reloc3 - RelocBase
+        dw	Reloc4 - RelocBase
+        dw	Reloc5 - RelocBase
+        dw	Reloc6 - RelocBase
+        dw	Reloc7 - RelocBase
+        dw	Reloc8 - RelocBase
+        dw	Reloc9 - RelocBase
+        dw	Reloc10 - RelocBase
+        dw	Reloc11 - RelocBase
+        dw	Reloc12 - RelocBase
+RelocTableEnd:
 
 ; TODO: Réutiliser l'espace du header de format auquel on ajoute un peu d'espace pour compléter.
 align   256
