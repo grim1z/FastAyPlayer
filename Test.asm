@@ -10,13 +10,12 @@
       ORG	#3000      
       RUN	$
 
-      adr_init	equ #9300         ; init player
-      adr_play	equ #9500        ; code player
+      adr_init	equ #2300        ; init player
+      adr_play	equ #2500        ; code player
       buf_ayc	equ #C000        ; buffers decrunch
-      adr_ayc	equ #6000
+      adr_ayc	equ #4000        ; Data
 
       _HicksPlayer	= 1
-      _DebugFap	= 1
 
 ;
 ; --- Macros ---
@@ -26,7 +25,7 @@ if    _HicksPlayer
 
       ; * Init player *
 MACRO ini_play	ReturnAddr
-      ld	a, #D0
+      ld	a, buf_ayc >> 8
       ld	bc, adr_play
       ld	de, {ReturnAddr}
       ld	hl, adr_ayc
@@ -128,25 +127,10 @@ savSp:
 
 if    _HicksPlayer
 
-if    _DebugFap
-      include	"FapMacro.asm"
-
-      org	adr_play
-FapPlay:
-      include	"FapPlay.asm"
-
-      org	adr_init
-FapInit:
-      include	"FapInit.asm"
-
-else
-
       org	adr_init: incbin "out/fapinit.bin"
       org	adr_play: incbin "out/fapplay.bin"
 
-endif
-
-      org	adr_ayc: incbin "results/v7/Short-Loop1.ayc"
+;      org	adr_ayc: incbin "results/v7/Short-Loop1.ayc"
 ;      org	adr_ayc: incbin "results/v7/From_Scratch-Part1.ayc"               ; 1:08      - Const: 12
 ;      org	adr_ayc: incbin "results/v5/Hocus_Pocus.ayc"                      ; 2:21      - Const: -
 ;      org	adr_ayc: incbin "results/v5/cybernoid.ayc"                        ; 2:21      - Const: 5, 11, 12, 13
@@ -159,7 +143,7 @@ endif
 ;      org	adr_ayc: incbin "results/v7/Solarium.ayc"                         ; 0:51      - Const: 12
 ;      org	adr_ayc: incbin "results/v7/Wireshar.ayc"                         ; 2:52      - Const: 12
 ;      org	adr_ayc: incbin "results/v5/Alienall.ayc"                         ; 1:59      - Const: 12
-;      org	adr_ayc: incbin "results/v5/Boules_et_bits.ayc"                   ; 3:04      - Const: 12
+      org	adr_ayc: incbin "results/v5/Boules_et_bits.ayc"                   ; 3:04      - Const: 12
 ;      org	adr_ayc: incbin "results/v5/Deep_space.ayc"                       ; 4:17      - Const: 12
 ;      org   adr_ayc: incbin "results/v5/Excellence_in_art.ayc"               ; 2:48      - Const: 12
 ;      org	adr_ayc: incbin "results/v5/Harmless_grenade.ayc"                 ; 1:01      - Const: 12
