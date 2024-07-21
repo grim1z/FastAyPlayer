@@ -715,6 +715,8 @@ if __name__ == "__main__":
 				Threshold = 0.005
 			elif sys.argv[3] == "-O":
 				Threshold = 0.01
+			elif sys.argv[3] == "-X":
+				Threshold = 0.015
 			else:
 				PrintUsageAndExit()
 
