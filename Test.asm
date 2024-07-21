@@ -13,7 +13,7 @@
       adr_init	equ #9300         ; init player
       adr_play	equ #9500        ; code player
       buf_ayc	equ #C000        ; buffers decrunch
-      adr_ayc	equ #3800
+      adr_ayc	equ #6000
 
       _HicksPlayer	= 1
       _DebugFap	= 1
@@ -146,8 +146,8 @@ else
 
 endif
 
-;      org	adr_ayc: incbin "results/v7/Short-Loop0.ayc"
-      org	adr_ayc: incbin "results/v7/From_Scratch-Part1.ayc"               ; 1:08      - Const: 12
+      org	adr_ayc: incbin "results/v7/Short-Loop1.ayc"
+;      org	adr_ayc: incbin "results/v7/From_Scratch-Part1.ayc"               ; 1:08      - Const: 12
 ;      org	adr_ayc: incbin "results/v5/Hocus_Pocus.ayc"                      ; 2:21      - Const: -
 ;      org	adr_ayc: incbin "results/v5/cybernoid.ayc"                        ; 2:21      - Const: 5, 11, 12, 13
 ;      org	adr_ayc: incbin "results/v7/Orion_Prime-Introduction.ayc"         ; 3:47      - Const: 12

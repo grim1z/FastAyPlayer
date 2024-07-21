@@ -40,6 +40,21 @@ RetFromGetPC2:
         push	hl      ; Address of crunched data
 
         ;
+        ; Check if data buffer is in high memory. If so we have to modify the player code.
+        ; Indeed, the player uses the high bit of the address to store a flag.
+        ; So, depending on the address given by the user, we have to invert the logic related to this flag.
+        ;
+        bit	7, h
+        jr	z, DataInLowerMemory
+
+        push    hl
+        Write8ToPlayerCodeWithReloc	SwitchResToSet, #FC     ; Switch "res 7, h" to "set 7, h"
+        Write8ToPlayerCodeWithReloc	SwitchNcToC, #38        ; switch "jr nc" to "jr c"
+        pop	hl
+
+DataInLowerMemory:
+
+        ;
         ; Do player code relocation
         ;
         ld	ix, #0000: add ix, sp      ; Backup SP

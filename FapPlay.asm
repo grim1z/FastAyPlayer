@@ -178,6 +178,7 @@ Reloc4 = $+2
         jr	c, SkipDecrunchTrampoline
         
         ld	a, h
+SwitchResToSet=$+1
         res	7, h
         ld	sp, hl          ; Load current position in decrunch buffer
 
@@ -296,8 +297,9 @@ RestartCopyLiteral:
 
 RestartPausedDecrunch:
         rla             ; if Bit 7 is set -> restart a Copy Literal
+SwitchNcToC:
         jr	nc, RestartPausedCopyFromDict
-
+        
         ;
         ; Restart Copy Literal
         ;
