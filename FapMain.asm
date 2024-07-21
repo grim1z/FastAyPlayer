@@ -1,3 +1,8 @@
+;
+;       Fucking Fast AY Player - 2024
+;         by Hicks/Vanity and Gozeur
+;
+
         org	#0000
         
         include	"FapMacro.asm"
