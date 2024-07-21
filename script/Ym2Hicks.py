@@ -456,7 +456,7 @@ class HicksConvertor:
 	#
 	# Count max register changes for one frame and limit changes to 11.
 	#
-	def CountAndLimitRegChangesOneFrame(self, Current, Prev, Next):
+	def CountAndLimitRegChangesOneFrame(self, Current, Prev, Next, Limit11, Limit12):
 		Changes = 0
 		if self.YmFile.Registers[0][Current] != 1:
 			Changes = Changes + 1
@@ -486,43 +486,64 @@ class HicksConvertor:
 		if self.YmFile.Registers[12][Current] != self.YmFile.Registers[12][Prev]:
 			Changes = Changes + 1
 
-		if Changes > 12:
+		if Limit12 and Changes > 12:
 			Changes = Changes - self.DelayOneRegister(Current, Next)
  
-		if Changes > 11:
+		if Limit11 and Changes > 11:
 			Changes = Changes - self.DelayOneRegister(Current, Next)
 
 		return Changes
 
 	#
-	# Count max register changes and limit changes to 11.
+	# Count max register changes and limit changes.
 	#
-	def CountAndLimitRegChanges(self):
+	def CountAndLimitRegChangesInternal(self, Limit11, Limit12):
 		MaxChanges = [0] * 15
 
-		Stats={}
-		for i in range(11):
-			Stats[i] = WindowStat(220)
 		for i in range (0, self.YmFile.NbFrames):
 			if i == self.YmFile.NbFrames - 1:
 				NextIndex = self.YmFile.LoopFrame
 			else:
 				NextIndex = i+1
-			Changes = self.CountAndLimitRegChangesOneFrame(i, i-1, NextIndex)
+			Changes = self.CountAndLimitRegChangesOneFrame(i, i-1, NextIndex, Limit11, Limit12)
 			MaxChanges[Changes] = MaxChanges[Changes] + 1
-			Stats[i%11].AddValue(Changes)
 
 		if self.YmFile.LoopFrame != 0:
-			Changes = self.CountAndLimitRegChangesOneFrame(self.YmFile.LoopFrame, self.YmFile.NbFrames - 1, self.YmFile.LoopFrame + 1)
+			Changes = self.CountAndLimitRegChangesOneFrame(self.YmFile.LoopFrame, self.YmFile.NbFrames - 1, self.YmFile.LoopFrame + 1, Limit11, Limit12)
 
 		MaxChanges[Changes] = MaxChanges[Changes] + 1
-		MaxAvg = 0
-		for i in range(11):
-			MaxAvg = max(MaxAvg, Stats[i].MaxAvg)
-		print("  - Worst case average register changes: ", round(MaxAvg, 2))
+
+		return MaxChanges
+
+	#
+	# Count max register changes and limit changes.
+	#
+	def CountAndLimitRegChanges(self, Threshold):
+		
+		# Dry run to compute the histogram of register changes
+
+		MaxChanges = self.CountAndLimitRegChangesInternal(False, False)
+
+		# Check if we have to limit the number of maximum register changes
+
+		Count = 0
+		Limit11 = Limit12 = False
+		for i in range (14, 12, -1):
+			Count = Count + MaxChanges[i]
+
+		if Count != 0 and Count / self.YmFile.NbFrames < Threshold:
+			Limit12 = True
+
+		Count = Count + MaxChanges[12]
+		if Count != 0 and Count / self.YmFile.NbFrames < Threshold:
+			Limit11 = True
+
+		if Limit11 or Limit12:
+			MaxChanges = self.CountAndLimitRegChangesInternal(Limit11, Limit12)
+	
 		print("  - Frames / Number of registers modified")
 		for i in range(0, 15):
-			print(f"     * {i:2}: {MaxChanges[i]}")
+			print(f"     * {i:2}: {MaxChanges[i]}\t{round(100*MaxChanges[i] / self.YmFile.NbFrames, 2)}%")
 			if MaxChanges[i] != 0:
 				self.RegistersToPlay = i
 
@@ -563,7 +584,7 @@ class HicksConvertor:
 	#
 	# Convert the given YM file to the Hicks format
 	#
-	def Convert(self, YmFile):
+	def Convert(self, YmFile, Threshold):
 		self.YmFile = YmFile
 		self.R = {}
 		self.RLoop = {}
@@ -605,7 +626,7 @@ class HicksConvertor:
 		self.AdjustR6ForR5(self.YmFile.Registers[6], self.YmFile.Registers[5])
 		self.AdjustR6ForR13(self.YmFile.Registers[6], self.YmFile.Registers[13])
 
-		self.CountAndLimitRegChanges()
+		self.CountAndLimitRegChanges(Threshold)
 
 		print("\nCrunching:")
 
@@ -680,16 +701,29 @@ class HicksConvertor:
 #
 ###################################################################################
 
+def PrintUsageAndExit():
+	raise Exception(f"Invalid number of arguments.\nUsage: {os.path.basename(sys.argv[0])} <Source YM file> <Destination Hicks file> [-o|-O]")
+
 if __name__ == "__main__":
 #	try:
-		if len(sys.argv) != 3:
-			raise Exception(f"Invalid number of arguments.\nUsage: {os.path.basename(sys.argv[0])} <Source YM file> <Destination Hicks file>")
+		if len(sys.argv) < 3 or len(sys.argv) > 4:
+			PrintUsageAndExit()
         	
+		Threshold = 0
+		if len(sys.argv) == 4:
+			if sys.argv[3] == "-o":
+				Threshold = 0.005
+			elif sys.argv[3] == "-O":
+				Threshold = 0.01
+			else:
+				PrintUsageAndExit()
+
 		Song = YmReader(sys.argv[1])
+		
 		Song.Import()
 
-		Convertor = HicksConvertor(sys.argv[2])
-		Convertor.Convert(Song)
+		Convertor = HicksConvertor(sys.argv[2])		
+		Convertor.Convert(Song, Threshold)
 		Convertor.Write()
 
 #	except Exception as ErrorMsg:
