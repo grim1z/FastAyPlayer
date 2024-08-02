@@ -6,7 +6,7 @@ class Lzss
 {
 public:
 	Lzss(int _windowSize, int _litMaxSize);
-	void LoadData(uint8_t* inData, int dataLen);
+	void LoadData(uint8_t* inData, int dataLen, int outLen);
 	void ReloadData(uint8_t* inData, int dataLen);
 	int Crunch(bool loopStart);
 	inline int GetCunchSize() { return dstLen; }

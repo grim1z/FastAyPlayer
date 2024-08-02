@@ -108,7 +108,7 @@ bool Lzss::FindLongestMatch(int& matchDistance, int& matchLen, int curPos)
 	return false;
 }
 
-void Lzss::LoadData(uint8_t* inData, int dataLen)
+void Lzss::LoadData(uint8_t* inData, int dataLen, int outLen)
 {
 	if (dstData)
 	{
@@ -118,7 +118,7 @@ void Lzss::LoadData(uint8_t* inData, int dataLen)
 	srcData = inData;
 	srcLen = dataLen;
 	dstLen = 0;
-	dstData = new uint8_t[dataLen];
+	dstData = new uint8_t[outLen];
 }
 
 void Lzss::ReloadData(uint8_t* inData, int dataLen)
@@ -144,14 +144,14 @@ int Lzss::Crunch(bool loopStart)
 	if (loopStart)
 		prevLen1 = prevLen2 = 1;
 	else
-		prevLen1 = prevLen2 = srcLen - 1;
+		prevLen1 = prevLen2 = -1;
 
 	while (pos + literalLen < srcLen)
 	{
 		bool match = FindLongestMatch(matchDistance, matchLen, pos + literalLen);
 
 		//
-		// Make sure that 2 following tokens decrunch at least X values
+		// Make sure that 2 following tokens decrunch at least X values - TODO: code plus utile ? Pas nécessaire d'adapter minDecrunchRatio ?
 		//
 		if (match)
 		{

@@ -397,7 +397,7 @@ void YmData::CountAndLimitRegChangesInternal(int maxChanges[NR_YM_REGISTERS], bo
 // 
 uint8_t YmData::CountAndLimitRegChanges(float Threshold)
 {
-	int maxChanges[NR_YM_REGISTERS] = { 0 };
+	int maxChanges[NR_YM_REGISTERS + 1] = { 0 };
 
 	// Dry run to compute the histogram of register changes
 

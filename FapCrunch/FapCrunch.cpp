@@ -4,8 +4,8 @@
 #include "YmData.h"
 #include "Lzss.h"
 
-#define FileName "D:\\Dropbox\\RetroGaming\\CPC\\Projets\\HicksPlayer\\resources\\src-ym\\From_Scratch-Part1.ym"
-#define FileNameOut "D:\\Dropbox\\RetroGaming\\CPC\\Projets\\HicksPlayer\\From_Scratch-Part1.fap"
+#define FileName "D:\\Dropbox\\RetroGaming\\CPC\\Projets\\HicksPlayer\\resources\\src-ym\\Boblines.ym"
+#define FileNameOut "D:\\Dropbox\\RetroGaming\\CPC\\Projets\\HicksPlayer\\Boblines.fap"
 
 uint8_t regOrder[] = { 0, 2, 1, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
 #define NR_FAP_REGISTERS sizeof(regOrder)
@@ -46,7 +46,7 @@ void CrunchSong(YmData& ymData,
 		}
 		else if (loopFrame != 0)
 		{
-			cruncher.LoadData(registerData, loopFrame);
+			cruncher.LoadData(registerData, loopFrame, nbFrames);
 			crunchSize[r] = cruncher.Crunch(false);
 			loopOffset[r] = crunchSize[r];
 
@@ -56,7 +56,7 @@ void CrunchSong(YmData& ymData,
 		}
 		else
 		{
-			cruncher.LoadData(registerData, nbFrames);
+			cruncher.LoadData(registerData, nbFrames, nbFrames);
 			crunchSize[r] = cruncher.Crunch(true);
 
 			loopOffset[r] = 0;
@@ -115,7 +115,8 @@ void WriteFile(YmData& ymData,
 		{
 			fwrite(crunchData[r], crunchSize[r], sizeof(uint8_t), out);
 			fwrite(&loopMarker, 1, sizeof(uint8_t), out);
-			fwrite(&bufferOffset[r], 1, sizeof(uint16_t), out);
+			loopOffset[r] += bufferOffset[r];
+			fwrite(&loopOffset[r], 1, sizeof(uint16_t), out);
 		}
 	}
 
