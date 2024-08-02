@@ -320,7 +320,7 @@ int YmData::CountAndLimitRegChangesOneFrame(int current, int prev, int next, boo
 void YmData::PrecaclDeltaPlay(int regId, int markerValue)
 {
 	uint8_t* registerData = pRegisters[regId];
-	uint8_t initVal = registerData[-1];
+	uint8_t initVal = registerData[nbFrames - 1];
 	uint8_t prevVal = initVal;
 
 	for (int f = 0; f < nbFrames; f++)
@@ -398,9 +398,6 @@ bool YmData::LoadFile(const char* FileName)
 	for (int r = 0; r < NR_YM_REGISTERS; r++)
 	{
 		pRegisters[r] = (uint8_t*)&pData[r * nbFrames];
-		for (int i = 0; i < 10; i++)
-			printf("%02x ", pRegisters[r][i]);
-		printf("\n");
 	}
 
 	//

@@ -21,24 +21,27 @@ void CrunchSong(YmData& ymData,
 	int loopFrame = ymData.GetLoopFrame();
 	int nbFrames = ymData.GetNbFrames();
 
+	printf("\nCrunching:\n");
+
 	for (int r = 0; r < NR_FAP_REGISTERS; r++)
 	{
 		uint8_t regIndex = RegOrder[r];
 		uint8_t* registerData = ymData.GetRegister(regIndex);
 
 		if (regIndex == 1) {
-			printf("  - Crunch register 1+3: ");
+			printf("  - Crunch register 1+3 : ");
 		}
 		else if (regIndex == 5)
 		{
-			printf(" - Crunch register 5 + 13: ");
+			printf("  - Crunch register 5+13: ");
 		}
 		else {
-			printf("  - Crunch register %d", regIndex);
+			printf("  - Crunch register %2d  : ", regIndex);
 		}
 
 		if (regIndex == 12 && ymData.R12IsConst())
 		{
+			printf("Skipped (register is constant)\n");
 			continue;
 		}
 		else if (loopFrame != 0)
@@ -77,6 +80,8 @@ void WriteFile(YmData& ymData,
 	uint8_t RegistersToPlay = 13;
 	uint8_t R12IsConst = ymData.R12IsConst();
 
+	printf("\nWriting file:\n");
+
 	// Write "SkipR12" flag
 	fwrite(&R12IsConst, 1, sizeof(uint8_t), out);
 
@@ -102,7 +107,6 @@ void WriteFile(YmData& ymData,
 	}
 	fwrite(BufferOffset, NR_FAP_REGISTERS, sizeof(uint16_t), out);
 
-
 	// Write : register data + loop marker + start address of register data in memory
 	uint8_t loopMarker = 0x1F;
 	for (int r = 0; r < NR_FAP_REGISTERS; r++)
@@ -114,6 +118,10 @@ void WriteFile(YmData& ymData,
 			fwrite(&BufferOffset[r], 1, sizeof(uint16_t), out);
 		}
 	}
+
+	long size = ftell(out);
+
+	printf("  - File size: %d (0x%X)\n", size, size);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -124,12 +132,6 @@ void WriteFile(YmData& ymData,
 
 int main(int argc, char* argv[])
 {
-	//	if (argc != 3)
-	//	{
-	//		printf("Usage: YM2WAV <ym music file> <wav file>\n\n");
-	//		return -1;
-	//	}
-
 	YmData ymData;
 
 	if (!ymData.LoadFile(FileName))

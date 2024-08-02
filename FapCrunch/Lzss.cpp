@@ -32,7 +32,6 @@ void Lzss::PushData(uint8_t* data, int len)
 //
 void Lzss::EncodeLiteral(int start, int len)
 {
-	printf("L: %d\n", len);
 	// Write Literal length
 	PushData(len - 1);
 
@@ -45,8 +44,6 @@ void Lzss::EncodeLiteral(int start, int len)
 //
 void Lzss::EncodeMatch(int distance, int len)
 {
-	printf("L: %d %d\n", distance, len);
-
 	// Write copy Length
 	PushData(len + 0x1D);
 
@@ -152,10 +149,6 @@ int Lzss::Crunch(bool loopStart)
 	while (pos + literalLen < srcLen)
 	{
 		bool match = FindLongestMatch(matchDistance, matchLen, pos + literalLen);
-		//		if (match)
-		//			printf("%d: %d:%d\n", pos + literalLen, matchDistance, matchLen);
-		//		else
-		//			printf("%d: -\n", pos + literalLen);
 
 		//
 		// Make sure that 2 following tokens decrunch at least X values
@@ -202,11 +195,6 @@ int Lzss::Crunch(bool loopStart)
 	{
 		EncodeLiteral(pos, literalLen);
 	}
-
-	printf("\nCrunch: ");
-	for (int i = 0; i < 10; i++)
-		printf("%02x ", dstData[i]);
-	printf("\n");
 
 	return dstLen;
 }
