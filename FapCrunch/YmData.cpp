@@ -1,7 +1,11 @@
 #include <stdio.h>
+#include <math.h>
+#include <string.h>
 
 #include "YmData.h"
 #include "Lzss.h"
+
+#define _DIST_MAX 100000
 
 //
 // Smooth envelope registers.
@@ -222,11 +226,11 @@ int YmData::DistFromPrevValue(uint8_t* registerData, int current, int next, uint
 
 	if (registerData[current] == markerValue)
 	{
-		return _CRT_INT_MAX;
+		return _DIST_MAX;
 	}
 	if (volumeRegister and ((registerData[current] & 0x80) == (registerData[next] & 0x80)))
 	{
-		return _CRT_INT_MAX;
+		return _DIST_MAX;
 	}
 
 	if (current == 0)
@@ -242,11 +246,11 @@ int YmData::DistFromPrevValue(uint8_t* registerData, int current, int next, uint
 	{
 		if (registerData[i] != markerValue)
 		{
-			return registerData[i] - registerData[current];
+			return abs(registerData[i] - registerData[current]);
 		}
 	}
 
-	return _CRT_INT_MAX;
+	return _DIST_MAX;
 }
 
 //
@@ -255,7 +259,12 @@ int YmData::DistFromPrevValue(uint8_t* registerData, int current, int next, uint
 int YmData::DelayOneRegister(int current, int next)
 {
 	uint8_t RegisterMapping[] = { 0, 2, 4, 11, 8, 9, 10 };
-	int Distance[sizeof(RegisterMapping)] = { _CRT_INT_MAX };
+	int Distance[sizeof(RegisterMapping)];
+
+	for (int i = 0; i < sizeof(RegisterMapping); i++)
+	{
+		Distance[i] = _DIST_MAX;
+	}
 
 	for (int i = 0; i < 4; i++)
 	{
@@ -271,7 +280,7 @@ int YmData::DelayOneRegister(int current, int next)
 
 	// Find the register hosting the minimal distance for the current frame.
 	uint8_t* selectedReg = nullptr;
-	int MinValue = _CRT_INT_MAX;
+	int MinValue = _DIST_MAX;
 	uint8_t replayVal;
 	for (int i = 0; i < sizeof(RegisterMapping); i++)
 	{
@@ -281,7 +290,7 @@ int YmData::DelayOneRegister(int current, int next)
 			selectedReg = pRegisters[regId];
 			MinValue = Distance[i];
 
-			if (i < 3)
+			if (i < 4)
 			{
 				replayVal = 1;
 			}
@@ -364,12 +373,17 @@ int YmData::CountAndLimitRegChangesOneFrame(int current, int prev, int next, boo
 //
 // Count max register changes and limit changes.
 //
-void YmData::CountAndLimitRegChangesInternal(int maxChanges[NR_YM_REGISTERS], bool Limit11, bool Limit12)
+void YmData::CountAndLimitRegChangesInternal(int maxChanges[NR_YM_REGISTERS + 1], bool Limit11, bool Limit12)
 {
 	int loopFrame = GetLoopFrame();
 	int PrevIndex = nbFrames - 1;
 	int NextIndex;
 	int nrChanges;
+
+	for (int i = 0; i < NR_YM_REGISTERS + 1; i++)
+	{
+		maxChanges[i] = 0;
+	}
 
 	for (int i = 0; i < nbFrames; i++)
 	{
