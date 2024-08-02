@@ -3,19 +3,15 @@
 #include "YmData.h"
 #include "Lzss.h"
 
-///////////////////////////////////////////////////////////////////////////////////
-//
-// Some YM exports can insert zeroes in registers R11 / R12 / R13 when bit 4 is
-// not set in volume control registers. This could decrease the quality of
-// compression routines.
-// 
-///////////////////////////////////////////////////////////////////////////////////
-
 //
 // Smooth envelope registers.
 //
 void YmData::FixHoles()
 {
+	// Some YM exports can insert zeroes in registers R11 / R12 / R13 when bit 4 is
+	// not set in volume control registers. This could decrease the quality of the
+	// compression routine.
+
 	uint8_t* r8 = GetRegister(8);
 	uint8_t* r9 = GetRegister(9);
 	uint8_t* r10 = GetRegister(10);
@@ -36,7 +32,7 @@ void YmData::FixHoles()
 }
 
 //
-//
+// Backup registers first frame value for future use.
 //
 void YmData::BackupInitValue()
 {
@@ -140,7 +136,7 @@ void YmData::MergeRegisters(uint8_t* R1, uint8_t* R2)
 }
 
 //
-//
+// Add delta-play flags for registers 6 and 13 in the register 5.
 //
 void YmData::AdjustR6andR13()
 {
@@ -152,7 +148,7 @@ void YmData::AdjustR6andR13()
 	{
 		if (R5[i] == R5[i - 1])
 		{
-			R6[i] = R6[i] | 0x20;
+			R6[i] = R6[i] | 0x20; // TODO: ajouter une macro
 		}
 	}
 
@@ -160,11 +156,62 @@ void YmData::AdjustR6andR13()
 	{
 		if (R13[i] == 0xFF)
 		{
-			R6[i] = R6[i] | 0x40;
+			R6[i] = R6[i] | 0x40; // TODO: ajouter une macro
 			R13[i] = R13[i - 1];   // TODO: this line is probably useless... Check this.
 		}
 	}
 }
+
+//
+//Insert markers for repeating value(used to quickly avoid to program a register)
+//
+void YmData::PrecaclDeltaPlay(int regId, int markerValue)
+{
+	uint8_t* registerData = pRegisters[regId];
+	uint8_t initVal = registerData[nbFrames - 1];
+	uint8_t prevVal = initVal;
+
+	for (int f = 0; f < nbFrames; f++)
+	{
+		bool deltaPlay = true;
+
+		if (registerData[f] != prevVal)
+		{
+			deltaPlay = false;
+		}
+
+		// Special case for 1st mixer and volume values.Avoid a delta - play since the mixer and volume are forced to mute in init values.
+		if ((f == 0) &&
+			(regId >= 7) &&
+			(regId <= 10))
+		{
+			deltaPlay = false;
+		}
+
+		// Special case for a non 0 loop frame.The current value must also be equal to the one in last frame to enable delta - play.
+		if (GetLoopFrame() != 0 &&
+			GetLoopFrame() == f &&
+			registerData[f] != initVal)
+		{
+			deltaPlay = false;
+		}
+
+		if (deltaPlay)
+		{
+			registerData[f] = markerValue;
+		}
+		else
+		{
+			prevVal = registerData[f];
+		}
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+//
+// Delay register programming
+//
+///////////////////////////////////////////////////////////////////////////////////
 
 //
 //Compute the distance between the current register value and the previous value
@@ -315,48 +362,84 @@ int YmData::CountAndLimitRegChangesOneFrame(int current, int prev, int next, boo
 }
 
 //
-//Insert markers for repeating value(used to quickly avoid to program a register)
+// Count max register changes and limit changes.
 //
-void YmData::PrecaclDeltaPlay(int regId, int markerValue)
+void YmData::CountAndLimitRegChangesInternal(int maxChanges[NR_YM_REGISTERS], bool Limit11, bool Limit12)
 {
-	uint8_t* registerData = pRegisters[regId];
-	uint8_t initVal = registerData[nbFrames - 1];
-	uint8_t prevVal = initVal;
+	int loopFrame = GetLoopFrame();
+	int PrevIndex = nbFrames - 1;
+	int NextIndex;
+	int nrChanges;
 
-	for (int f = 0; f < nbFrames; f++)
+	for (int i = 0; i < nbFrames; i++)
 	{
-		bool deltaPlay = true;
-
-		if (registerData[f] != prevVal)
-		{
-			deltaPlay = false;
-		}
-
-		// Special case for 1st mixer and volume values.Avoid a delta - play since the mixer and volume are forced to mute in init values.
-		if ((f == 0) &&
-			(regId >= 7) &&
-			(regId <= 10))
-		{
-			deltaPlay = false;
-		}
-
-		// Special case for a non 0 loop frame.The current value must also be equal to the one in last frame to enable delta - play.
-		if (GetLoopFrame() != 0 &&
-			GetLoopFrame() == f &&
-			registerData[f] != initVal)
-		{
-			deltaPlay = false;
-		}
-
-		if (deltaPlay)
-		{
-			registerData[f] = markerValue;
-		}
+		if (i == nbFrames - 1)
+			NextIndex = loopFrame;
 		else
+			NextIndex = i + 1;
+
+		nrChanges = CountAndLimitRegChangesOneFrame(i, PrevIndex, NextIndex, Limit11, Limit12);
+		maxChanges[nrChanges]++;
+
+		PrevIndex = i;
+	}
+
+	if (loopFrame != 0)
+	{
+		nrChanges = CountAndLimitRegChangesOneFrame(loopFrame, nbFrames - 1, loopFrame + 1, Limit11, Limit12);
+	}
+
+	maxChanges[nrChanges]++;
+}
+
+// 
+// Count max register changes and limit changes.
+// 
+uint8_t YmData::CountAndLimitRegChanges(float Threshold)
+{
+	int maxChanges[NR_YM_REGISTERS] = { 0 };
+
+	// Dry run to compute the histogram of register changes
+
+	CountAndLimitRegChangesInternal(maxChanges, false, false);
+
+	// Check if we have to limit the number of maximum register changes
+
+	int Count = 0;
+	bool Limit11 = false;
+	bool Limit12 = false;
+
+	for (int i = 14; i > 12; i--)
+	{
+		Count = Count + maxChanges[i];
+	}
+
+	if (Count != 0 && (float)Count / nbFrames < Threshold)
+	{
+		Limit12 = true;
+	}
+
+	Count = Count + maxChanges[12];
+	if (Count != 0 && (float)Count / nbFrames < Threshold)
+	{
+		Limit11 = true;
+	}
+
+	if (Limit11 || Limit12)
+	{
+		CountAndLimitRegChangesInternal(maxChanges, Limit11, Limit12);
+	}
+
+	int registersToPlay = 0;
+	for (int i = 0; i < NR_YM_REGISTERS; i++)
+	{
+		if (maxChanges[i] != 0)
 		{
-			prevVal = registerData[f];
+			registersToPlay = i;
 		}
 	}
+
+	return registersToPlay;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -401,14 +484,17 @@ bool YmData::LoadFile(const char* FileName)
 	}
 
 	//
-	// Fixup and optimize data.
+	// Fixup data and perform some basic operations
 	//
 	FixHoles();
-
 	BackupInitValue();
-
 	CheckR12IsConstant();
 
+	return true;
+}
+
+void YmData::Optimize()
+{
 	SmoothRegisters(pRegisters[0], pRegisters[1], pRegisters[8], 1);
 	SmoothRegisters(pRegisters[2], pRegisters[3], pRegisters[9], 2);
 	SmoothRegisters(pRegisters[4], pRegisters[5], pRegisters[10], 3);
@@ -434,10 +520,4 @@ bool YmData::LoadFile(const char* FileName)
 	PrecaclDeltaPlay(11, 0x01);
 
 	AdjustR6andR13();
-
-#if 0
-	CountAndLimitRegChanges(Threshold);
-#endif
-
-	return true;
 }
