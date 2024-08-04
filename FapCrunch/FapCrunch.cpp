@@ -130,7 +130,7 @@ void WriteFile(char* fileName,
 
 void PrintUsageAndExit()
 {
-	printf("Invalid number of arguments.\nUsage: FapCrunch <Source YM file> <Destination Hicks file> [-o|-O]\n");
+	printf("Invalid number of arguments.\nUsage: FapCrunch <Source YM file> <Destination Hicks file> [-1|-2]\n");
 	exit(-1);
 }
 
@@ -152,15 +152,15 @@ int main(int argc, char* argv[])
 		}
 		switch (argv[3][1])
 		{
-		case 'o':
+		case '1':
 			threshold = 0.005f;
 			break;
 
-		case 'O':
+		case '2':
 			threshold = 0.01f;
 			break;
 
-		case 'X':
+		case '3':
 			threshold = 0.015f;
 			break;
 
@@ -192,10 +192,12 @@ int main(int argc, char* argv[])
 	{
 		int exeTime[] = { 592, 616, 640, 664 };
 		printf("  - Play time: %d NOPS\n", exeTime[nrRegistersToPlay - 11]);
+		printf("  - Decrunch buffer size: 3144 (#C48)\n");
 	}
 	else
 	{
 		printf("  - Play time: undefined (register 12 is not const...)\n");
+		printf("  - Decrunch buffer size: 2888 (#B48)\n");
 	}
 
 	return 0;
