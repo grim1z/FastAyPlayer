@@ -4,9 +4,6 @@
 #include "YmData.h"
 #include "Lzss.h"
 
-#define FileName "D:\\Dropbox\\RetroGaming\\CPC\\Projets\\HicksPlayer\\resources\\src-ym\\Boblines.ym"
-#define FileNameOut "D:\\Dropbox\\RetroGaming\\CPC\\Projets\\HicksPlayer\\Boblines.fap"
-
 uint8_t regOrder[] = { 0, 2, 1, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
 #define NR_FAP_REGISTERS sizeof(regOrder)
 
@@ -69,7 +66,8 @@ void CrunchSong(YmData& ymData,
 	}
 }
 
-void WriteFile(YmData& ymData,
+void WriteFile(char* fileName,
+	YmData& ymData,
 	uint8_t* crunchData[NR_FAP_REGISTERS],
 	int crunchSize[NR_FAP_REGISTERS],
 	int loopOffset[NR_FAP_REGISTERS],
@@ -77,7 +75,7 @@ void WriteFile(YmData& ymData,
 
 {
 	FILE* out;
-	errno_t err = fopen_s(&out, FileNameOut, "wb");
+	errno_t err = fopen_s(&out, fileName, "wb");
 	uint8_t r12IsConst = ymData.R12IsConst();
 
 	printf("\nWriting file:\n");
@@ -130,27 +128,75 @@ void WriteFile(YmData& ymData,
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
+void PrintUsageAndExit()
+{
+	printf("Invalid number of arguments.\nUsage: FapCrunch <Source YM file> <Destination Hicks file> [-o|-O]\n");
+	exit(-1);
+}
+
 int main(int argc, char* argv[])
 {
+	float threshold = 0;
 	YmData ymData;
 
-	if (!ymData.LoadFile(FileName))
+	if (argc < 3 || argc > 4)
 	{
-		printf("Error in loading file %s:\n", FileName);
+		PrintUsageAndExit();
+	}
+
+	if (argc == 4)
+	{
+		if (strlen(argv[3]) != 2 || argv[3][0] != '-')
+		{
+			PrintUsageAndExit();
+		}
+		switch (argv[3][1])
+		{
+		case 'o':
+			threshold = 0.005f;
+			break;
+
+		case 'O':
+			threshold = 0.01f;
+			break;
+
+		case 'X':
+			threshold = 0.015f;
+			break;
+
+		default:
+			PrintUsageAndExit();
+		}
+	}
+
+	char* srcFile = argv[1];
+	char* dstFile = argv[2];
+
+	if (!ymData.LoadFile(srcFile))
+	{
+		printf("Cannot load file %s:\n", srcFile);
 		return -1;
 	}
 
 	ymData.Optimize();
-	uint8_t nrRegistersToPlay = ymData.CountAndLimitRegChanges(0);
+	uint8_t nrRegistersToPlay = ymData.CountAndLimitRegChanges(threshold);
 
 	uint8_t* crunchData[NR_FAP_REGISTERS] = { 0 };
 	int crunchSize[NR_FAP_REGISTERS] = { 0 };
 	int loopOffset[NR_FAP_REGISTERS] = { 0 };
 
 	CrunchSong(ymData, crunchData, crunchSize, loopOffset);
-	WriteFile(ymData, crunchData, crunchSize, loopOffset, nrRegistersToPlay);
+	WriteFile(dstFile, ymData, crunchData, crunchSize, loopOffset, nrRegistersToPlay);
 
-	printf("  - Play time: %d NOPS\n", 640);
+	if (ymData.R12IsConst())
+	{
+		int exeTime[] = { 592, 616, 640, 664 };
+		printf("  - Play time: %d NOPS\n", exeTime[nrRegistersToPlay - 11]);
+	}
+	else
+	{
+		printf("  - Play time: undefined (register 12 is not const...)\n");
+	}
 
 	return 0;
 }

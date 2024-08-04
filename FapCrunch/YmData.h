@@ -31,7 +31,7 @@ private:
 	int CountAndLimitRegChangesOneFrame(int Current, int Prev, int Next, bool Limit11, bool Limit12);
 	int DelayOneRegister(int Current, int Next);
 	int DistFromPrevValue(uint8_t* registerData, int current, int next, uint8_t markerValue, bool volumeRegister);
-	void CountAndLimitRegChangesInternal(int maxChanges[NR_YM_REGISTERS], bool Limit11, bool Limit12);
+	void CountAndLimitRegChangesInternal(int* maxChanges, bool Limit11, bool Limit12);
 
 private:
 	int	nbFrames;

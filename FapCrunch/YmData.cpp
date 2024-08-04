@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
+#include <algorithm> 
 
 #include "YmData.h"
 #include "Lzss.h"
@@ -378,7 +379,7 @@ void YmData::CountAndLimitRegChangesInternal(int maxChanges[NR_YM_REGISTERS + 1]
 	int loopFrame = GetLoopFrame();
 	int PrevIndex = nbFrames - 1;
 	int NextIndex;
-	int nrChanges;
+	int nrChanges = 0;
 
 	for (int i = 0; i < NR_YM_REGISTERS + 1; i++)
 	{
@@ -401,9 +402,8 @@ void YmData::CountAndLimitRegChangesInternal(int maxChanges[NR_YM_REGISTERS + 1]
 	if (loopFrame != 0)
 	{
 		nrChanges = CountAndLimitRegChangesOneFrame(loopFrame, nbFrames - 1, loopFrame + 1, Limit11, Limit12);
+		maxChanges[nrChanges]++;
 	}
-
-	maxChanges[nrChanges]++;
 }
 
 // 
@@ -452,6 +452,8 @@ uint8_t YmData::CountAndLimitRegChanges(float Threshold)
 			registersToPlay = i;
 		}
 	}
+
+	registersToPlay = std::max(11, registersToPlay);
 
 	return registersToPlay;
 }
