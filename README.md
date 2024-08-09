@@ -19,12 +19,12 @@ The first step in order to use FAP is to crunch an YM file using the PC executab
 In a Windows command shell, type the following command:
 
 ```shell
-C:\> FapCrunchx64.exe MySourceFile.ym MyDestinationFile.fap
+C:\> FapCrunchWin.exe MySourceFile.ym MyDestinationFile.fap
 ```
 
 On a Linux machine, type the following command:
 ```shell
-user@site:~$ FapCrunch MySourceFile.ym MyDestinationFile.fap
+user@site:~$ FapCrunchLin MySourceFile.ym MyDestinationFile.fap
 ```
 
 The resulting *.fap* file is the music data file to use on the CPC machine.

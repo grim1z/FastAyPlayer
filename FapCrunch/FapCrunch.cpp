@@ -1,3 +1,5 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <cstring>
@@ -66,7 +68,7 @@ void CrunchSong(YmData& ymData,
 	}
 }
 
-void WriteFile(char* fileName,
+bool WriteFile(char* fileName,
 	YmData& ymData,
 	uint8_t* crunchData[NR_FAP_REGISTERS],
 	int crunchSize[NR_FAP_REGISTERS],
@@ -74,9 +76,13 @@ void WriteFile(char* fileName,
 	uint8_t registersToPlay)
 
 {
-	FILE* out;
-	errno_t err = fopen_s(&out, fileName, "wb");
+	FILE* out = fopen(fileName, "wb");
 	uint8_t r12IsConst = ymData.R12IsConst();
+
+	if (out == NULL)
+	{
+		return false;
+	}
 
 	// Write "SkipR12" flag
 	fwrite(&r12IsConst, 1, sizeof(uint8_t), out);
@@ -118,6 +124,8 @@ void WriteFile(char* fileName,
 
 	long fileSize = ftell(out);
 	printf("  - File size: %d (0x%X)\n", fileSize, fileSize);
+
+	return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -189,7 +197,12 @@ int main(int argc, char* argv[])
 	printf("  - Max registers to program: %d\n", nrRegistersToPlay);
 	printf("  - Constant Register 12: %s\n", ymData.R12IsConst() ? "YES" : "NO... Damn your musician!");
 
-	WriteFile(dstFile, ymData, crunchData, crunchSize, loopOffset, nrRegistersToPlay);
+	bool success = WriteFile(dstFile, ymData, crunchData, crunchSize, loopOffset, nrRegistersToPlay);
+	if (!success)
+	{
+		printf("Error while write result file\n");
+		abort();
+	}
 
 	if (ymData.R12IsConst())
 	{

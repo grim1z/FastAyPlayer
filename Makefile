@@ -1,35 +1,41 @@
 ACE = /opt/tools/cpc/ACE/AceDL
 RASM = rasm
 
-TARGET = out/TestZic.sna
+TEST_TARGET = TestZic.sna
+PLAYER_TARGET = Release/fapplay.bin
+CRUNCHER_TARGET = Release/FapCrunchLin
 
-all: $(TARGET)
+TARGETS = $(PLAYER_TARGET) $(CRUNCHER_TARGET) $(TEST_TARGET)
 
-$(TARGET): Test.asm out/fapinit.bin
-	mkdir -p out
+all: $(TARGETS)
+
+$(CRUNCHER_TARGET): FapCrunch/*.cpp FapCrunch/*.h
+	g++ -std=c++11 FapCrunch/*.cpp -o $(CRUNCHER_TARGET)
+
+$(TEST_TARGET): Test.asm Release/fapinit.bin
+	mkdir -p Release
 ifdef WSL_DISTRO_NAME
-	cmd.exe /c "D:\Dropbox\RetroGaming\CPC\rasm.exe -v -ss -sb -sa -void -twe -xr -eo Test.asm -oi $(TARGET)"
+	cmd.exe /c "D:\Dropbox\RetroGaming\CPC\rasm.exe -v -ss -sb -sa -void -twe -xr -eo Test.asm -oi $(TEST_TARGET)"
 else
-	rasm -d -v -ss -sb -sa -void -twe -xr -eo Test.asm -oi $(TARGET)
+	rasm -d -v -ss -sb -sa -void -twe -xr -eo Test.asm -oi $(TEST_TARGET)
 endif
 
-out/fapinit.bin: Fap*.asm
-	mkdir -p out
+$(PLAYER_TARGET): Fap*.asm
+	mkdir -p Release
 ifdef WSL_DISTRO_NAME
 	cmd.exe /c "D:\Dropbox\RetroGaming\CPC\rasm.exe -v -void -twe -xr -eo FapMain.asm -oi /tmp/player.bin"
 else
 	rasm -d -v -void -twe -xr -eo FapMain.asm -oi /tmp/player.bin
 endif
 
-
 clean:
-	rm -f out/*
+	rm -rf Release $(TARGETS)
 
 run:
 ifdef WSL_DISTRO_NAME
-	cmd.exe /c "D:\Dropbox\RetroGaming\CPC\AceDL\AceDL.exe -crtc 1 -ffr $(TARGET)"
+	cmd.exe /c "D:\Dropbox\RetroGaming\CPC\AceDL\AceDL.exe -crtc 1 -ffr $(TEST_TARGET)"
 else
-	$(ACE) -crtc 1 -ffr $(TARGET)
+	$(ACE) -crtc 1 -ffr $(TEST_TARGET)
 endif
 
 dsk:

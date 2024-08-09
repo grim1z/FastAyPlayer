@@ -127,8 +127,8 @@ savSp:
 
 if    _HicksPlayer
 
-      org	adr_init: incbin "out/fapinit.bin"
-      org	adr_play: incbin "out/fapplay.bin"
+      org	adr_init: incbin "Release/fapinit.bin"
+      org	adr_play: incbin "Release/fapplay.bin"
 
 ;      org	adr_ayc: incbin "results/v7/Short-Loop1.ayc"
       org	adr_ayc: incbin "results/v7/From_Scratch-Part1.ayc"               ; 1:08      - Const: 12

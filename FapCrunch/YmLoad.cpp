@@ -7,17 +7,28 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef _MSC_VER
+#define bswap_16(x) _byteswap_ushort(x)
+#define bswap_32(x) _byteswap_ulong(x)
+#else
+#include <byteswap.h>
+#endif
+
 #include "YmLoad.h"
+
+///////////////////////////////////////////////////////////////////////////////////
+//
+// Helper functions
+//
+///////////////////////////////////////////////////////////////////////////////////
 
 static int FileSizeGet(FILE* h)
 {
 	int size;
-	int old;
 
-	old = ftell(h);
 	fseek(h, 0, SEEK_END);
 	size = ftell(h);
-	fseek(h, old, SEEK_SET);
+	fseek(h, 0, SEEK_SET);
 
 	return size;
 }
@@ -26,14 +37,14 @@ int Read32ByteSwap(uint8_t** ptr)
 {
 	unsigned int* valPtr = (unsigned int*)*ptr;
 	*ptr += 4;
-	return _byteswap_ulong(*valPtr);
+	return bswap_32(*valPtr);
 }
 
 short Read16ByteSwap(uint8_t** ptr)
 {
 	unsigned short* valPtr = (unsigned short*)*ptr;
 	*ptr += 2;
-	return _byteswap_ushort(*valPtr);
+	return bswap_16(*valPtr);
 }
 
 char* ReadNtString(char** ptr)
@@ -45,11 +56,15 @@ char* ReadNtString(char** ptr)
 	return p;
 }
 
+///////////////////////////////////////////////////////////////////////////////////
+//
+// YM File Reader
+//
+///////////////////////////////////////////////////////////////////////////////////
+
 bool YmLoad::load(const char* fileName)
 {
-	FILE* in;
-
-	in = fopen(fileName, "rb");
+	FILE* in = fopen(fileName, "rb");
 	if (!in)
 	{
 		setLastError("File not Found");

@@ -1,6 +1,6 @@
 #pragma once
 
-typedef unsigned __int8 uint8_t;
+#include "Types.h"
 
 class Lzss
 {

@@ -1,11 +1,10 @@
 #pragma once
 
+#include "Types.h"
+
 //
 // This code is strongly inspired by the StSoundLibrary (https://github.com/arnaud-carre/StSound) by Arnaud Carre (aka Leonard/Oxygene).
 //
-
-typedef	unsigned char uint8_t;
-typedef	unsigned short uint16_t;
 
 enum
 {

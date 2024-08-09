@@ -71,8 +71,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)\..\out</OutDir>
-    <TargetName>$(ProjectName)$(Platform)</TargetName>
+    <OutDir>$(SolutionDir)\..\Release</OutDir>
+    <TargetName>$(ProjectName)Win</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -131,7 +131,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>del $(SolutionDir)\..\out\*.pdb</Command>
+      <Command>del $(SolutionDir)\..\Release\*.pdb</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -142,6 +142,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Lzss.h" />
+    <ClInclude Include="Types.h" />
     <ClInclude Include="YmData.h" />
     <ClInclude Include="YmLoad.h" />
   </ItemGroup>
