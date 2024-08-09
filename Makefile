@@ -4,10 +4,15 @@ RASM = rasm
 TEST_TARGET = TestZic.sna
 PLAYER_TARGET = Release/fapplay.bin
 CRUNCHER_TARGET = Release/FapCrunchLin
+RELEASE_TARGET = FapRelease.zip
 
-TARGETS = $(PLAYER_TARGET) $(CRUNCHER_TARGET) $(TEST_TARGET)
+TARGETS = $(PLAYER_TARGET) $(CRUNCHER_TARGET) $(TEST_TARGET) $(RELEASE_TARGET)
 
 all: $(TARGETS)
+
+$(RELEASE_TARGET): $(PLAYER_TARGET) $(CRUNCHER_TARGET)
+	cp -f README.md Release
+	zip $(RELEASE_TARGET) Release/*
 
 $(CRUNCHER_TARGET): FapCrunch/*.cpp FapCrunch/*.h
 	g++ -std=c++11 FapCrunch/*.cpp -o $(CRUNCHER_TARGET)
