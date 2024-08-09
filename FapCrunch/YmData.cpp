@@ -1,10 +1,11 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
 #include <algorithm> 
 
 #include "YmData.h"
-#include "Lzss.h"
+#include "YmLoad.h"
 
 #define _DIST_MAX 100000
 
@@ -466,34 +467,22 @@ uint8_t YmData::CountAndLimitRegChanges(float Threshold)
 
 bool YmData::LoadFile(const char* FileName)
 {
-	pYmFile = new CYmMusic;
-	ymMusicInfo_t YmFileInfo;
+	YmLoad YmFile;
 
 	//
 	// Read the Ym file and print some informations.
 	//
-	if (!pYmFile->load(FileName))
+	if (!YmFile.load(FileName))
 	{
 		return false;
 	}
 
-	printf("\nFile header:\n");
-	printf("  - Nb of frames:    %d\n", pYmFile->GetNbFrame());
-	printf("  - Interleaved:     %s\n", pYmFile->getAttrib() & A_STREAMINTERLEAVED ? "Yes" : "No");
-	printf("  - Nb of digidrums: %d\n", pYmFile->GetNbDrums());
-	printf("  - Loop Frame:      %d\n", pYmFile->GetLoopFrame());
-
-	pYmFile->getMusicInfo(&YmFileInfo);
-	printf("\nSong Informations:\n");
-	printf("  - Song name: %s\n", YmFileInfo.pSongName);
-	printf("  - Author:    %s\n", YmFileInfo.pSongAuthor);
-	printf("  - Comment:   %s\n", YmFileInfo.pSongComment);
-
 	//
 	// Extract registers from the raw buffer.
 	//
-	nbFrames = pYmFile->GetNbFrame();
-	const uint8_t* pData = pYmFile->GetDataStream();
+	nbFrames = YmFile.GetNbFrame();
+	loopFrame = YmFile.GetLoopFrame();
+	const uint8_t* pData = YmFile.GetDataStream();
 	for (int r = 0; r < NR_YM_REGISTERS; r++)
 	{
 		pRegisters[r] = (uint8_t*)&pData[r * nbFrames];

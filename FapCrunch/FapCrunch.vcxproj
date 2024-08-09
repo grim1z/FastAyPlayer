@@ -137,24 +137,13 @@
   <ItemGroup>
     <ClCompile Include="FapCrunch.cpp" />
     <ClCompile Include="Lzss.cpp" />
-    <ClCompile Include="StSoundLibrary\digidrum.cpp" />
-    <ClCompile Include="StSoundLibrary\LZH\LzhLib.cpp" />
-    <ClCompile Include="StSoundLibrary\Ym2149Ex.cpp" />
-    <ClCompile Include="StSoundLibrary\Ymload.cpp" />
-    <ClCompile Include="StSoundLibrary\YmMusic.cpp" />
-    <ClCompile Include="StSoundLibrary\YmUserInterface.cpp" />
     <ClCompile Include="YmData.cpp" />
+    <ClCompile Include="YmLoad.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Lzss.h" />
-    <ClInclude Include="StSoundLibrary\digidrum.h" />
-    <ClInclude Include="StSoundLibrary\LZH\LZH.H" />
-    <ClInclude Include="StSoundLibrary\StSoundLibrary.h" />
-    <ClInclude Include="StSoundLibrary\Ym2149Ex.h" />
-    <ClInclude Include="StSoundLibrary\YmLoad.h" />
-    <ClInclude Include="StSoundLibrary\YmMusic.h" />
-    <ClInclude Include="StSoundLibrary\YmTypes.h" />
     <ClInclude Include="YmData.h" />
+    <ClInclude Include="YmLoad.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

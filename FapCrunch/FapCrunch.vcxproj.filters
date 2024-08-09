@@ -13,34 +13,10 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Fichiers sources\stSoundLibrary">
-      <UniqueIdentifier>{388cf898-ab65-4566-a62c-ed5d5df569f1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Fichiers d%27en-tête\stSoundLibrary">
-      <UniqueIdentifier>{ff4b71c6-d9df-4a33-99da-efa488d16af1}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FapCrunch.cpp">
       <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="StSoundLibrary\digidrum.cpp">
-      <Filter>Fichiers sources\stSoundLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="StSoundLibrary\LZH\LzhLib.cpp">
-      <Filter>Fichiers sources\stSoundLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="StSoundLibrary\Ym2149Ex.cpp">
-      <Filter>Fichiers sources\stSoundLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="StSoundLibrary\Ymload.cpp">
-      <Filter>Fichiers sources\stSoundLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="StSoundLibrary\YmMusic.cpp">
-      <Filter>Fichiers sources\stSoundLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="StSoundLibrary\YmUserInterface.cpp">
-      <Filter>Fichiers sources\stSoundLibrary</Filter>
     </ClCompile>
     <ClCompile Include="YmData.cpp">
       <Filter>Fichiers sources</Filter>
@@ -48,33 +24,18 @@
     <ClCompile Include="Lzss.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
+    <ClCompile Include="YmLoad.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="StSoundLibrary\digidrum.h">
-      <Filter>Fichiers d%27en-tête\stSoundLibrary</Filter>
-    </ClInclude>
-    <ClInclude Include="StSoundLibrary\LZH\LZH.H">
-      <Filter>Fichiers d%27en-tête\stSoundLibrary</Filter>
-    </ClInclude>
-    <ClInclude Include="StSoundLibrary\StSoundLibrary.h">
-      <Filter>Fichiers d%27en-tête\stSoundLibrary</Filter>
-    </ClInclude>
-    <ClInclude Include="StSoundLibrary\Ym2149Ex.h">
-      <Filter>Fichiers d%27en-tête\stSoundLibrary</Filter>
-    </ClInclude>
-    <ClInclude Include="StSoundLibrary\YmLoad.h">
-      <Filter>Fichiers d%27en-tête\stSoundLibrary</Filter>
-    </ClInclude>
-    <ClInclude Include="StSoundLibrary\YmMusic.h">
-      <Filter>Fichiers d%27en-tête\stSoundLibrary</Filter>
-    </ClInclude>
-    <ClInclude Include="StSoundLibrary\YmTypes.h">
-      <Filter>Fichiers d%27en-tête\stSoundLibrary</Filter>
-    </ClInclude>
     <ClInclude Include="YmData.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
     <ClInclude Include="Lzss.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+    <ClInclude Include="YmLoad.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
   </ItemGroup>

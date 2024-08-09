@@ -1,7 +1,6 @@
 #pragma once
 
-#include "StSoundLibrary/StSoundLibrary.h"
-#include "StSoundLibrary/YmMusic.h"
+#include "YmLoad.h"
 
 #define NR_YM_REGISTERS 14
 
@@ -14,7 +13,7 @@ public:
 
 	inline uint8_t* GetRegister(int r) { return pRegisters[r]; }
 	inline int GetNbFrames() { return nbFrames; }
-	inline int GetLoopFrame() { return pYmFile->GetLoopFrame(); }
+	inline int GetLoopFrame() { return loopFrame; }
 	inline bool R12IsConst() { return R12IsConstant; }
 	inline uint8_t* GetInitValues() { return initValues; }
 
@@ -35,9 +34,9 @@ private:
 
 private:
 	int	nbFrames;
+	int loopFrame;
 	bool R12IsConstant;
-	CYmMusic* pYmFile;
-	uint8_t* pRegisters[NR_YM_REGISTERS];
 
+	uint8_t* pRegisters[NR_YM_REGISTERS];
 	uint8_t initValues[NR_YM_REGISTERS];
 };

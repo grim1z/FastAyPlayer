@@ -172,7 +172,7 @@ int main(int argc, char* argv[])
 
 	if (!ymData.LoadFile(srcFile))
 	{
-		printf("Cannot load file %s:\n", srcFile);
+		printf("Cannot load file %s\n", srcFile);
 		return -1;
 	}
 
