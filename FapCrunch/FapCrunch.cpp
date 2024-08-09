@@ -78,15 +78,13 @@ void WriteFile(char* fileName,
 	errno_t err = fopen_s(&out, fileName, "wb");
 	uint8_t r12IsConst = ymData.R12IsConst();
 
-	printf("\nWriting file:\n");
-
 	// Write "SkipR12" flag
 	fwrite(&r12IsConst, 1, sizeof(uint8_t), out);
 
 	// The player behaves badly if R12 is not constant.Hopefully, this is a very uncommon case.
 	// However, in this case, we have to take a large secutiry gap to reach a sufficient decrunch ratio :(
 	if (!ymData.R12IsConst())
-		registersToPlay = registersToPlay + 3;
+		registersToPlay = registersToPlay + 2;
 
 	// Write number of registers to play
 	fwrite(&registersToPlay, 1, sizeof(uint8_t), out);
@@ -186,18 +184,25 @@ int main(int argc, char* argv[])
 	int loopOffset[NR_FAP_REGISTERS] = { 0 };
 
 	CrunchSong(ymData, crunchData, crunchSize, loopOffset);
+
+	printf("\nSummury:\n");
+	printf("  - Max registers to program: %d\n", nrRegistersToPlay);
+	printf("  - Constant Register 12: %s\n", ymData.R12IsConst() ? "YES" : "NO... Damn your musician!");
+
 	WriteFile(dstFile, ymData, crunchData, crunchSize, loopOffset, nrRegistersToPlay);
 
 	if (ymData.R12IsConst())
 	{
 		int exeTime[] = { 592, 616, 640, 664 };
 		printf("  - Play time: %d NOPS\n", exeTime[nrRegistersToPlay - 11]);
-		printf("  - Decrunch buffer size: 3144 (#C48)\n");
+		printf("  - Decrunch buffer size: 3144 (#B42)\n");
 	}
 	else
 	{
-		printf("  - Play time: undefined (register 12 is not const...)\n");
-		printf("  - Decrunch buffer size: 2888 (#B48)\n");
+		int exeTime[] = { 660, 684, 708, 732 };
+
+		printf("  - Play time: %d NOPS\n", exeTime[nrRegistersToPlay - 11]);
+		printf("  - Decrunch buffer size: 2888 (#C48)\n");
 	}
 
 	return 0;
