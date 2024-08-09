@@ -10,7 +10,6 @@ It consists of:
 Main features:
  * Very low execution time: from 592 NOPS (9 scanlines + 16 NOPS) to 640 NOPS (10 scanlines), depending on the song.
  * Very easy to use: player is precompiled, PIC (Position Independent Code) and does not need to be specialized or configured for the song. Music data is position independent.
- * Reasonable memory usage.
 
 Step 1: YM file crunching
 -------------------------
@@ -20,7 +19,7 @@ The first step in order to use FAP is to crunch an YM file using the PC executab
 In a Windows command shell, type the following command:
 
 ```shell
-C:\> FapCrunch.exe MySourceFile.ym MyDestinationFile.fap
+C:\> FapCrunchx64.exe MySourceFile.ym MyDestinationFile.fap
 ```
 
 On a Linux machine, type the following command:
@@ -151,7 +150,7 @@ SaveSp = $+1
     ;
     org	FapInit: incbin "out/fapinit.bin"
     org	FapPlay: incbin "out/fapplay.bin"
-    org	FapData: incbin "results/v7/From_Scratch-Part1.ayc"
+    org	FapData: incbin "music.fap"
 ```
 
 Performance
@@ -166,15 +165,20 @@ However, if you run into this problem, your musician can probably adjust their s
 
 If the execution play time specified by the cruncher is higher than 592 NOPS, you can consider using frame
 shifting options (see above).
+
+The following table presents the performance (in NOPS) of the player depending on the maximum number of registers to
+program per frame and the register 12 "constantness".
+
 | Max reg to program | R12 constant | R12 NOT constant |
 |:------------------:|:------------:|:----------------:|
-|         11         |     592      |         -        |
-|         12         |     616      |         X        |
-|         13         |     640      |         X        |
-|         14         |      -       |         X        |
+|         11         |     592      |        660       |
+|         12         |     616      |        684       |
+|         13         |     640      |        708       |
+|         14         |      -       |        732       |
 
 Credits
 -------
 
  * Idea and original Z80 code: Hicks/Vanity
- * Z80 optimizations, PIC and relocation adaptation, cruncher and packaging: Gozeur/Contrast
+ * Z80 optimizations, PIC and relocation adaptation, cruncher, packaging and documentation: Gozeur/Contrast
+
