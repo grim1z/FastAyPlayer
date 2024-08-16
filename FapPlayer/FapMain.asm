@@ -10,9 +10,9 @@
 FapPlay:
         include	"FapPlay.asm"
         print	"FAP Player size: ", $-FapPlay
-        save	"Release/fapplay.bin", FapPlay, $-FapPlay
+        save	"Build/fapplay.bin", FapPlay, $-FapPlay
 
 FapInit:
         include	"FapInit.asm"
         print	"FAP Init code size: ", $-FapInit
-        save	"Release/fapinit.bin", FapInit, $-FapInit
+        save	"Build/fapinit.bin", FapInit, $-FapInit
