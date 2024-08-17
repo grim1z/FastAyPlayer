@@ -1,9 +1,26 @@
-A Fucking Fast Ay Player
-=========================
+A Fast AY Player
+================
 
-The Fast Ay Player (FAP) is a constant-time, ultra-fast music player for Amstrad CPC.
-It consists of:
- * A Windows or Linux executable used to crunch YM music files.
+FAP (Fast AY Player) is a **constant-excecution-time** and **ultra-fast** (10 raster-lines at most) AY3-891x
+music player for the [Amstrad CPC](https://www.cpcwiki.eu/index.php/CPC).
+
+Written by **Hicks/Vanity** and **Gozeur/Contrast**.
+
+# Table of Contents
+1. [Overview](#Overview)
+2. [Step 1: YM file crunching](#Step-1-YM-file-crunching)
+3. [Step 2: Memory setup](#Step-2-Memory-setup)
+4. [Step 3: Player initialization](#Step-3-Player-initialization)
+5. [Step 4: Let's play!](#Step-4-Let's-play!)
+6. [Full example](#Full-example)
+7. [Performance](#Performance)
+8. [Credits](#Credits)
+
+Overview
+--------
+
+FAP consists of:
+ * A Windows and Linux executable used to crunch YM music files.
  * Two Z80 binaries (the effective player and an initialization routine). These binaries have been
    precompiled for you. But you can recompile them if needed.
 
@@ -11,8 +28,8 @@ Main features:
  * Very low execution time: from 592 NOPS (9 scanlines + 16 NOPS) to 640 NOPS (10 scanlines), depending on the song.
  * Very easy to use: player is precompiled, PIC (Position Independent Code) and does not need to be specialized or configured for the song. Music data is position independent.
 
-Step 1: YM file crunching
--------------------------
+Step 1: Create a FAP music-file from an YM file
+-----------------------------------------------
 
 The first step in order to use FAP is to crunch an YM file using the PC executable.
 
@@ -31,7 +48,7 @@ The resulting *.fap* file is the music data file to use on the CPC machine.
 
 ### Frame shifting options
 
-If the "*play time*" displayed by the cruncher is greater than 592 NOPS, you can try using one of the
+If the "*play time*" displayed by the cruncher is greater than **592 NOPS**, you can try using one of the
 following options:
 
  * **-1**: Allow the modification of less than 0.5% of frames.
