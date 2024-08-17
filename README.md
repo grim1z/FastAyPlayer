@@ -8,10 +8,10 @@ Written by **Hicks/Vanity** and **Gozeur/Contrast**.
 
 # Table of Contents
 1. [Overview](#Overview)
-2. [Step 1: YM file crunching](#Step-1-YM-file-crunching)
+2. [Step 1: YM file crunching](#Step-1-Create-a-FAP-music-file-from-an-YM-file)
 3. [Step 2: Memory setup](#Step-2-Memory-setup)
 4. [Step 3: Player initialization](#Step-3-Player-initialization)
-5. [Step 4: Let's play!](#Step-4-Let's-play!)
+5. [Step 4: Let's play!](#Step-4-Lets-play)
 6. [Full example](#Full-example)
 7. [Performance](#Performance)
 8. [Credits](#Credits)
