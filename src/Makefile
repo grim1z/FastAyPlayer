@@ -1,12 +1,12 @@
-ACE = /opt/tools/cpc/ACE/AceDL
 RASM = rasm
 
 BUILD_DIR = Build
 PLAYER_DIR = FapPlayer
+EXAMPLE_DIR = Example
 
 FAP_CRUNCH = $(BUILD_DIR)/FapCrunchLin
-TEST_TARGET = TestZic.sna
-PLAYER_TARGET = $(BUILD_DIR)/fapplay.bin
+TEST_TARGET = TestZic
+PLAYER_TARGET = $(BUILD_DIR)/fap-play.bin
 CRUNCHER_TARGET = $(BUILD_DIR)/FapCrunchLin
 RELEASE_TARGET = FapRelease.zip
 
@@ -15,44 +15,22 @@ TARGETS = $(PLAYER_TARGET) $(CRUNCHER_TARGET) $(TEST_TARGET) $(RELEASE_TARGET)
 all: $(TARGETS)
 
 $(RELEASE_TARGET): $(PLAYER_TARGET) $(CRUNCHER_TARGET)
-	cp -f README.md $(BUILD_DIR)
+	cp -f ../README.md $(BUILD_DIR)
 	zip $(RELEASE_TARGET) $(BUILD_DIR)/*
 
 $(CRUNCHER_TARGET): FapCrunch/*.cpp FapCrunch/*.h
 	g++ -std=c++11 FapCrunch/*.cpp -o $(CRUNCHER_TARGET)
 
-$(TEST_TARGET): $(PLAYER_DIR)/Test.asm $(BUILD_DIR)/fapinit.bin
+$(TEST_TARGET): $(EXAMPLE_DIR)/FapTest.asm $(BUILD_DIR)/fap-init.bin
 	mkdir -p $(BUILD_DIR)
-ifdef WSL_DISTRO_NAME
-	cmd.exe /c "D:\Dropbox\RetroGaming\CPC\rasm.exe -v -ss -sb -sa -void -twe -xr -eo $(PLAYER_DIR)/Test.asm $(TEST_TARGET)"
-else
-	rasm -d -v -ss -sb -sa -void -twe -xr -eo $(PLAYER_DIR)/Test.asm $(TEST_TARGET)
-endif
+	rasm -d -v -ss -sb -sa -void -twe -xr -eo $(EXAMPLE_DIR)/FapTest.asm $(TEST_TARGET)
 
 $(PLAYER_TARGET): $(PLAYER_DIR)/Fap*.asm
 	mkdir -p $(BUILD_DIR)
-ifdef WSL_DISTRO_NAME
-	cmd.exe /c "D:\Dropbox\RetroGaming\CPC\rasm.exe -v -void -twe -xr -eo $(PLAYER_DIR)/FapMain.asm /tmp/player.bin"
-else
 	rasm -d -v -void -twe -xr -eo $(PLAYER_DIR)/FapMain.asm /tmp/player.bin
-endif
 
 clean:
-	rm -rf $(BUILD_DIR) $(TARGETS)
-
-run:
-ifdef WSL_DISTRO_NAME
-	cmd.exe /c "D:\Dropbox\RetroGaming\CPC\AceDL\AceDL.exe -crtc 1 -ffr $(TEST_TARGET)"
-else
-	$(ACE) -crtc 1 -ffr $(TEST_TARGET)
-endif
-
-dsk:
-ifdef WSL_DISTRO_NAME
-	cmd.exe /c "D:\Dropbox\RetroGaming\CPC\AceDL\AceDL.exe -crtc 1 -ffr Player.dsk"
-else
-	$(ACE) -crtc 1 -ffr Player.dsk
-endif
+	rm -rf $(BUILD_DIR) $(TARGETS) *.sna
 
 ym:
 	$(FAP_CRUNCH) "Resources/ym/FenyxKell - Bobline.ym" "Resources/fap/FenyxKell - Bobline.fap"
