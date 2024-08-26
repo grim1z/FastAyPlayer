@@ -56,4 +56,4 @@ RestoreSp = $+1
         ;    
         org	FapInit: incbin "../Build/fap-init.bin"
         org	FapPlay: incbin "../Build/fap-play.bin"
-        org	FapData: incbin "../Resources/fap/Tom&Jerry - Boules Et Bits (Extended).fap"
+        org	FapData: incbin "../Samples/fap/Tom&Jerry - Boules Et Bits (Extended).fap"

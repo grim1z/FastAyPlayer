@@ -1,41 +1,56 @@
 RASM = rasm
+FAP_CRUNCH = $(BUILD_DIR)/FapCrunchLin
 
+#
+# Define directories
+#
 BUILD_DIR = Build
 PLAYER_DIR = FapPlayer
 EXAMPLE_DIR = Example
 
-FAP_CRUNCH = $(BUILD_DIR)/FapCrunchLin
-TEST_TARGET = TestZic
+#
+# Define targets
+#
+TEST_TARGET = FapTest
 PLAYER_TARGET = $(BUILD_DIR)/fap-play.bin
 CRUNCHER_TARGET = $(BUILD_DIR)/FapCrunchLin
 RELEASE_TARGET = FapRelease.zip
 
-TARGETS = $(PLAYER_TARGET) $(CRUNCHER_TARGET) $(TEST_TARGET) $(RELEASE_TARGET)
+#
+# Targets shortcuts
+#
+player: $(PLAYER_TARGET)
+cruncher: $(CRUNCHER_TARGET)
+release: $(RELEASE_TARGET)
+test: $(TEST_TARGET).sna
 
-all: $(TARGETS)
-
-$(RELEASE_TARGET): $(PLAYER_TARGET) $(CRUNCHER_TARGET)
-	cp -f ../README.md $(BUILD_DIR)
-	zip $(RELEASE_TARGET) $(BUILD_DIR)/*
-
+#
+# Build rules
+#
 $(CRUNCHER_TARGET): FapCrunch/*.cpp FapCrunch/*.h
 	g++ -std=c++11 FapCrunch/*.cpp -o $(CRUNCHER_TARGET)
-
-$(TEST_TARGET): $(EXAMPLE_DIR)/FapTest.asm $(BUILD_DIR)/fap-init.bin
-	mkdir -p $(BUILD_DIR)
-	rasm -d -v -ss -sb -sa -void -twe -xr -eo $(EXAMPLE_DIR)/FapTest.asm $(TEST_TARGET)
 
 $(PLAYER_TARGET): $(PLAYER_DIR)/Fap*.asm
 	mkdir -p $(BUILD_DIR)
 	rasm -d -v -void -twe -xr -eo $(PLAYER_DIR)/FapMain.asm /tmp/player.bin
 
+$(RELEASE_TARGET): player cruncher
+	cp -f ../README.md $(BUILD_DIR)
+#       FapCrunchWin.exe must be built on a windows machine. TODO: use MinGW for a cross-compilation from Linux.
+	cp -f Release/FapCrunchWin.exe $(BUILD_DIR)
+	zip $(RELEASE_TARGET) $(BUILD_DIR)/*
+
+$(TEST_TARGET).sna: $(EXAMPLE_DIR)/FapTest.asm player
+	mkdir -p $(BUILD_DIR)
+	rasm -d -v -ss -sb -sa -void -twe -xr -eo $(EXAMPLE_DIR)/FapTest.asm $(TEST_TARGET)
+
 clean:
-	rm -rf $(BUILD_DIR) $(TARGETS) *.sna
+	rm -rf $(BUILD_DIR) $(PLAYER_TARGET) $(CRUNCHER_TARGET) $(RELEASE_TARGET) *.sna
 
 ym:
-	$(FAP_CRUNCH) "Resources/ym/FenyxKell - Bobline.ym" "Resources/fap/FenyxKell - Bobline.fap"
-	$(FAP_CRUNCH) "Resources/ym/Targhan - Hocus Pocus.ym" "Resources/fap/Targhan - Hocus Pocus.fap"
-	$(FAP_CRUNCH) "Resources/ym/Tom&Jerry - From Scratch - Part 1.ym" "Resources/fap/Tom&Jerry - From Scratch - Part 1.fap"
-	$(FAP_CRUNCH) "Resources/ym/Targhan - A Harmless Grenade.ym" "Resources/fap/Targhan - A Harmless Grenade.fap"
-	$(FAP_CRUNCH) "Resources/ym/Tom&Jerry - Boules Et Bits (Extended).ym" "Resources/fap/Tom&Jerry - Boules Et Bits (Extended).fap"
-	$(FAP_CRUNCH) "Resources/ym/UltraSyd - Fractal.ym" "Resources/fap/UltraSyd - Fractal.fap"
+	$(FAP_CRUNCH) "Samples/ym/FenyxKell - Bobline.ym" "Samples/fap/FenyxKell - Bobline.fap"
+	$(FAP_CRUNCH) "Samples/ym/Targhan - Hocus Pocus.ym" "Samples/fap/Targhan - Hocus Pocus.fap"
+	$(FAP_CRUNCH) "Samples/ym/Tom&Jerry - From Scratch - Part 1.ym" "Samples/fap/Tom&Jerry - From Scratch - Part 1.fap"
+	$(FAP_CRUNCH) "Samples/ym/Targhan - A Harmless Grenade.ym" "Samples/fap/Targhan - A Harmless Grenade.fap"
+	$(FAP_CRUNCH) "Samples/ym/Tom&Jerry - Boules Et Bits (Extended).ym" "Samples/fap/Tom&Jerry - Boules Et Bits (Extended).fap"
+	$(FAP_CRUNCH) "Samples/ym/UltraSyd - Fractal.ym" "Samples/fap/UltraSyd - Fractal.fap"
