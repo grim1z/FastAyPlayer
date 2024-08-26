@@ -8,19 +8,17 @@ Written by **Hicks/Vanity** and **Gozeur/Contrast**.
 
 # Table of Contents
 1. [Overview](#Overview)
-2. [Step 1: YM file crunching](#Step-1-Create-a-FAP-music-file-from-an-YM-file)
-3. [Step 2: Memory setup](#Step-2-Memory-setup)
-4. [Step 3: Player initialization](#Step-3-Player-initialization)
-5. [Step 4: Let's play!](#Step-4-Lets-play)
-6. [Full example](#Full-example)
-7. [Performance](#Performance)
-8. [Credits](#Credits)
+2. [Usage](#Usage)
+3. [Full example](#Full-example)
+4. [Performance](#Performance)
+5. [Memory considerations](#Memory-considerations)
+6. [Credits](#Credits)
 
 Overview
 --------
 
 FAP consists of:
- * A Windows and Linux executable used to crunch YM music files.
+ * A Windows and a Linux executable used to crunch YM music files.
  * Two Z80 binaries (the effective player and an initialization routine). These binaries have been
    precompiled for you. But you can recompile them if needed.
 
@@ -28,83 +26,68 @@ Main features:
  * Very low execution time: from 592 NOPS (9 scanlines + 16 NOPS) to 640 NOPS (10 scanlines), depending on the song.
  * Very easy to use: player is precompiled, PIC (Position Independent Code) and does not need to be specialized or configured for the song. Music data is position independent.
 
-Step 1: Create a FAP music-file from an YM file
------------------------------------------------
+Usage
+-----
+### Step 1: Create a FAP music-file from an YM file
 
 The first step in order to use FAP is to crunch an YM file using the PC executable.
+The cruncher takes two arguments: an _YM_ and a _FAP_ file-paths, and one optional argument (see "*frame shifting options*" below).
 
 In a Windows command shell, type the following command:
-
 ```shell
-C:\> FapCrunchWin.exe MySourceFile.ym MyDestinationFile.fap
+C:\> FapCrunchWin.exe path/to/input.ym path/to/output.fap [-1 or -2]
 ```
 
 On a Linux machine, type the following command:
 ```shell
-user@site:~$ FapCrunchLin MySourceFile.ym MyDestinationFile.fap
+user@site:~$ FapCrunchLin path/to/input.ym path/to/output.fap [-1 or -2]
 ```
 
-The resulting *.fap* file is the music data file to use on the CPC machine.
+#### Frame shifting options
 
-### Frame shifting options
+After crunching an _YM_ file, if the _Play time_ indicated is greater than **592 NOPs**, you may allow the cruncher
+to re-arrange the audio-frame data to optimize for CPU-cycles on the music-replay side:
 
-If the "*play time*" displayed by the cruncher is greater than **592 NOPS**, you can try using one of the
-following options:
+ - `-1`: re-arrange at most 0.5% of the audio-frames.
+ - `-2`: re-arrange at most 1% of the audio-frames.
 
- * **-1**: Allow the modification of less than 0.5% of frames.
- * **-2**: Allow the modification of less than 1% of frames.
+In any cases, the changes will be kept at a minimum and should not be audible.
+The execution time reduction is not guaranted, since it depends on the YM data.
+ 
+### Step 2: Memory setup
 
-Example:
-```shell
-C:\> FapCrunch.exe MySourceFile.ym MyDestinationFile.fap -1
-```
+The second step is to setup the various elements needed in memory to replay a FAP music file:
 
-By using one of these options, you allow the cruncher to shift the programming of certain registers by a few frames.
-These shifts have been calibrated to be rare enough not to be audible.
+ * **Initialization routine**\
+   It can be located anywhere in memory. It is a fully Position Independant Code (PIC).
+	* A precompiled version is provided in the release archive: *fap-init.bin*
+ 	* **Size: `335` bytes**
+ * **Player code**\
+   It can be located anywhere in memory since the code is relocated by the initialization routine.
+	* A precompiled version is provided in the release archive: *fap-play.bin*
+	* **Size: `609` bytes**
+ * **Music data**\
+   The *fap* file can be located anywhere in memory but **it must** be fully located either between `[#0000-#7FFF]` or `[#8000-#FFFF]` and **never cross over the `#8000` boundary**.
+	* **Size: variable with a maximum of 32Kb**
+ * **Replay buffers**\
+   For internal usage, the player needs some extra memory. The cruncher will indicate which buffer-size is required. It can be located anywhere in memory but **it must be aligned on a `#100` byte memory address boundary** (i.e. low byte of the address is `#00`).
+	* Size usually is `#B42` bytes up to `#C48` bytes on rare occasions.
 
-The execution time reduction will depend on the YM source file.
+### Step 3: Player initialization
 
-Step 2: Memory setup
---------------------
+Finally, the player must be initialized in order to know where all the things are located in memory.
+We will pass all these information to the init-routine through Z80 registers as follow:
+  * **`A`** = Most significant byte of the buffer address.
+  * **`BC`** = Address of the player routine.
+  * **`DE`** = Address where the player will jump back into your program.
+  * **`HL`** = Address of the FAP music data.
 
-The second step is to setup the memory of the CPC with all the needed stuff. 4 items must be setup
-in memory: 
- * **Initialization code binary** (*fapinit.bin*): it can be located anywhere in memory since the code
-   has been designed to be PIC (Position Idependant Code).
-	* **Size: 335 bytes**
- * **Player code binary** (*fapplay.bin*): it can be located anywhere in memory since the code is
-   relocated by the initialization code.
-	* **Size: 609 bytes**
- * **Music data** (*.fap* file): it can be located anywhere in memory. There is, however, one constraint:
-   <u>**all of the music data must fit below address #8000 or above address #8000**</u>, NOT overlapping address
-   #8000. This is due to an optimization which uses the most significant bit of the address to store an
-   internal flag. Thus, this bit must be 0 or 1 for every address of the music data.
-	* **Size: variable, depends on the YM source file**
- * **Decrunch buffers**: the player needs some memory to store YM decrunched values. This buffer can be
-	located anywhere in memory. Only one constraint: <u>**the low order byte of the address must be equal
-	to 0**</u>.
-	* **Size: #B42 for most musics. #C48 in very uncommon situations. The cruncher tells you the size to use**
+### Step 4: Let's play!
 
-Step 3: Player initialization
------------------------------
+Here we are, you can now call the player, one time par frame.
 
-Once everything has been stored in memory, you must initialize the player. To do so, you have to call
-the initialization code, with the following registers set as follows:
-  * **A** = high order byte of the address of the decrunch buffer (low address is 0).
-  * **BC** = address of the player code.
-  * **DE** = return address. The player is not called using the *CALL* instruction, but with *JP*. So, you have to
-	tell the player where to return after playing one music frame.
-  * **HL** = Address of music data.
-
-Once the player is initialized, the initialization code is no more needed (unless you want to initialize another song later).
-So, you can freely overwrite it if you need some extra memory.
-
-Step 4: Let's play!
--------------------
-
-Here we are, you can now call the player, one time par frame. But beware of the calling convention:
-  * Use *JP* to call the player, not *CALL*
-  * The SP register is trashed by the player, so backup the register before the *JP* if necessary.
+For psychopathic optimization reasons, the replay routine will abuse the stack-pointer. Therefore, **it must be jumped into** and not called (ie. `JP FapPlay` instead of the usual  `CALL FapPlay`). It also **must not be interrupted**.
+When its done, it will **jump back to your program** at the return address given to the player initialization-routine. **And it's up to you to save and restore the stack-pointer** (`SP`).
  
 Full example
 ------------
@@ -119,10 +102,13 @@ display very cool video effects.
     ORG	#3000      
     RUN	$
 
-    FapInit	equ #C000       ; Address of the player initialization code.
-    FapBuff	equ #4000       ; Address of the decrunch buffers (low order byte MUST BE 0).
-    FapPlay	equ #4B42       ; Address of the player code.
-    FapData	equ #4DA3       ; Address of the music data. For this address, music data must be < 12893 bytes to avoid crossing the #8000 address (read above).
+    BuffSize	equ #B42		; Size of replay buffer given by the cruncher.
+    PlayerSize	equ 609			; Size of the FAP player code
+
+    FapInit	equ #C000       	; Address of the player initialization code.
+    FapBuff	equ #4000       	; Address of the decrunch buffers (low order byte MUST BE 0).
+    FapPlay	equ FapBuff+BuffSize  	; Address of the player code. Right after the decrunch buffer.
+    FapData	equ FapPlay+PlayerSize	; Address of the music data. Right after the player routine.
 
     ;
     ; You known the story ;)
@@ -148,16 +134,18 @@ MainLoop:
     in	a, (c)
     rra
     jr	nc, MainLoop
-      
-    di
-    ld	(SaveSp), sp
-    jp	FapPlay
-ReturnAddr:
-SaveSp = $+1
-    ld	sp, 0
-    ei
 
-    halt ; Wait to make sure the VBL is over.
+    di			; Prevent interrupt apocalypse
+    ld	(RestoreSp), sp	; Save our precious stack-pointer
+    jp	FapPlay		; Jump into the replay-routine
+
+ReturnAddr:		; Return address the replay-routine will jump back to
+
+RestoreSp = $+1
+    ld	sp, 0		; Restore our precious stack-pointer
+    ei			; We may enable the maskable interrupts again
+
+    halt		; Wait to make sure the VBL is over.
     halt
 
     jp	MainLoop
@@ -193,9 +181,22 @@ program per frame and the register 12 "constantness".
 |         13         |     640      |        708       |
 |         14         |      -       |        732       |
 
+Memory considerations
+---------------------
+
+  * Music data size:\
+    The music data size depends on the given YM file and the optional usage of the cruncher *frame shifting option*. On average, a FAP file size is between 2Kb and 4Kb per minute.\
+    If saving disk space is important for you, you can concider crunching a FAP file. On average, crunching a FAP file using an *LZ-like* algorithm reduces its size by 50%.
+
+  * Initialisation code:\
+    If you only want to replay a single music, the init-routine can be completely disposed of right after being used (eg. put it where it can happily be overwritten with something else, such as video-ram).
+
+  * Music data header:\
+    If you need a few extra bytes in memory to achieve your killing effect, you might consider overwriting the FAP data header. After calling the initialization-routine, you can freely overwrite the first 28 bytes of the music data.
+
 Credits
 -------
 
- * Idea and original Z80 code: Hicks/Vanity
- * Z80 optimizations, PIC and relocation adaptation, cruncher, packaging and documentation: Gozeur/Contrast
-
+ * Idea and original Z80 code: Hicks/Vanity.
+ * Z80 optimizations, PIC and relocation adaptation, cruncher, packaging and documentation: Gozeur/Contrast.
+ * Support and testing: Targhan/Arkos, Grim/Arkos, Tom's/Pulpo Corrosivo, Tom et Jerry/GPA, Zik/Futurs.
