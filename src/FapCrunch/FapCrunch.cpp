@@ -123,7 +123,7 @@ bool WriteFile(char* fileName,
 	}
 
 	long fileSize = ftell(out);
-	printf("  - File size: %d (0x%X)\n", fileSize, fileSize);
+	printf("  - File size: %ld (0x%lX)\n", fileSize, fileSize);
 
 	return true;
 }
@@ -193,7 +193,7 @@ int main(int argc, char* argv[])
 
 	CrunchSong(ymData, crunchData, crunchSize, loopOffset);
 
-	printf("\nSummury:\n");
+	printf("\nSummary:\n");
 	printf("  - Max registers to program: %d\n", nrRegistersToPlay);
 	printf("  - Constant Register 12: %s\n", ymData.R12IsConst() ? "YES" : "NO... Damn your musician!");
 

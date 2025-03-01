@@ -102,6 +102,7 @@ bool YmLoad::load(const char* fileName)
 	{
 		free(pBigMalloc);
 		pBigMalloc = NULL;
+		puts(GetLastError());
 		return false;
 	}
 
@@ -111,7 +112,7 @@ bool YmLoad::load(const char* fileName)
 	printf("  - Loop Frame:      %d\n", loopFrame);
 	printf("  - Interleaved:     %s\n", attrib & A_STREAMINTERLEAVED ? "Yes" : "No");
 
-	printf("\nSong Informations:\n");
+	printf("\nSong Information:\n");
 	printf("  - Song name: %s\n", pSongName);
 	printf("  - Author:    %s\n", pSongAuthor);
 	printf("  - Comment:   %s\n", pSongComment);
@@ -141,6 +142,12 @@ bool YmLoad::ymDecode(void)
 	ptr = pBigMalloc + 12;
 	nbFrame = Read32ByteSwap(&ptr);
 	attrib = Read32ByteSwap(&ptr);
+	if (!(attrib & A_STREAMINTERLEAVED))
+	{
+		setLastError("YM must be in interleaved format (not frame by frame)...");
+		return false;
+	}
+
 	int nbDrum = Read16ByteSwap(&ptr);
 	int clock = Read32ByteSwap(&ptr);
 	int playrate = Read16ByteSwap(&ptr);
