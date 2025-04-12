@@ -15,6 +15,7 @@ Reloc1 = $+1
         ld	(CurrentPlayerBufferLow), a
         exx
         ld	bc, #C680
+        out     (c),b           ; 'read register' mode initialisation
         exx
 NrRegistersToPlay = $+1
         ld	bc, #F400       ; Max number of registers to play is written in the C register by the init code.
