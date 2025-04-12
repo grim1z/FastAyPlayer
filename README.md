@@ -120,11 +120,13 @@ display very cool video effects.
     ; Initialize the player.
     ; Once the player is initialized, you can overwrite the init code if you need some extra memory.
     ;
+    di			; coz FapInit makes heavy use of SP
     ld	a, hi(FapBuff)	; High byte of the decrunch buffer address.
     ld	bc, FapPlay     ; Address of the player binary.
     ld	de, ReturnAddr  ; Address to jump after playing a song frame.
     ld	hl, FapData     ; Address of song data.
     call    FapInit
+    ei
 
     ;
     ; Main loop
