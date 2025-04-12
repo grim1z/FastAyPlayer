@@ -23,7 +23,7 @@ FAP consists of:
    precompiled for you. But you can recompile them if needed.
 
 Main features:
- * Very low execution time: from 592 NOPS (9 scanlines + 16 NOPS) to 640 NOPS (10 scanlines), depending on the song.
+ * Very low execution time: from 596 NOPS (9 scanlines + 20 NOPS) to 644 NOPS (10 scanlines + 4 NOPS), depending on the song.
  * Very easy to use: player is precompiled, PIC (Position Independent Code) and does not need to be specialized or configured for the song. Music data is position independent.
 
 Usage
@@ -45,7 +45,7 @@ user@site:~$ FapCrunchLin path/to/input.ym path/to/output.fap [-1 or -2]
 
 #### Frame shifting options
 
-After crunching an _YM_ file, if the _Play time_ indicated is greater than **592 NOPs**, you may allow the cruncher
+After crunching an _YM_ file, if the _Play time_ indicated is greater than **596 NOPs**, you may allow the cruncher
 to re-arrange the audio-frame data to optimize for CPU-cycles on the music-replay side:
 
  - `-1`: re-arrange at most 0.5% of the audio-frames.
@@ -65,7 +65,7 @@ The second step is to setup the various elements needed in memory to replay a FA
  * **Player code**\
    It can be located anywhere in memory since the code is relocated by the initialization routine.
 	* A precompiled version is provided in the release archive: *fap-play.bin*
-	* **Size: `609` bytes**
+	* **Size: `611` bytes**
  * **Music data**\
    The *fap* file can be located anywhere in memory but **it must** be fully located either between `[#0000-#7FFF]` or `[#8000-#FFFF]` and **never cross over the `#8000` boundary**.
 	* **Size: variable with a maximum of 32Kb**
@@ -81,6 +81,8 @@ We will pass all these information to the init-routine through Z80 registers as 
   * **`BC`** = Address of the player routine.
   * **`DE`** = Address where the player will jump back into your program.
   * **`HL`** = Address of the FAP music data.
+Don't forget to disable interrupts (di), as initialisation makes massive use of the stack.
+If you want to play the same music several times, you'll need to save and restore the initialization routine.
 
 ### Step 4: Let's play!
 
@@ -103,7 +105,7 @@ display very cool video effects.
     RUN	$
 
     BuffSize	equ #B42		; Size of replay buffer given by the cruncher.
-    PlayerSize	equ 609			; Size of the FAP player code
+    PlayerSize	equ 611			; Size of the FAP player code
 
     FapInit	equ #C000       	; Address of the player initialization code.
     FapBuff	equ #4000       	; Address of the decrunch buffers (low order byte MUST BE 0).
@@ -178,17 +180,17 @@ program per frame and the register 12 "constantness".
 
 | Max reg to program | R12 constant | R12 NOT constant |
 |:------------------:|:------------:|:----------------:|
-|         11         |     592      |        660       |
-|         12         |     616      |        684       |
-|         13         |     640      |        708       |
-|         14         |      -       |        732       |
+|         11         |     596      |        664       |
+|         12         |     620      |        688       |
+|         13         |     644      |        712       |
+|         14         |      -       |        736       |
 
 Memory considerations
 ---------------------
 
   * Music data size:\
     The music data size depends on the given YM file and the optional usage of the cruncher *frame shifting option*. On average, a FAP file size is between 2Kb and 4Kb per minute.\
-    If saving disk space is important for you, you can concider crunching a FAP file. On average, crunching a FAP file using an *LZ-like* algorithm reduces its size by 50%.
+    If saving disk space is important for you, you can concider crunching a FAP file. On average, crunching a FAP file using an *LZ-like* algorithm reduces its size by 30%.
 
   * Initialisation code:\
     If you only want to replay a single music, the init-routine can be completely disposed of right after being used (eg. put it where it can happily be overwritten with something else, such as video-ram).
@@ -201,4 +203,4 @@ Credits
 
  * Idea and original Z80 code: Hicks/Vanity.
  * Z80 optimizations, PIC and relocation adaptation, cruncher, packaging and documentation: Gozeur/Contrast.
- * Support and testing: Targhan/Arkos, Grim/Arkos, Tom's/Pulpo Corrosivo, Tom et Jerry/GPA, Zik/Futurs.
+ * Support and testing: Targhan/Arkos, Grim/Seminanceata, toms/Pulpo Corrosivo, Tom et Jerry/GPA, Zik/Futurs'.
