@@ -172,7 +172,7 @@ The player performance depends on:
 If the register 12 is not constant, the player will be slower. This is a very uncommon situation.
 However, if you run into this problem, your musician can probably adjust their song a bit to keep R12 constant.
 
-If the execution play time specified by the cruncher is higher than 592 NOPS, you can consider using frame
+If the execution play time specified by the cruncher is higher than 596 NOPS, you can consider using frame
 shifting options (see above).
 
 The following table presents the performance (in NOPS) of the player depending on the maximum number of registers to
