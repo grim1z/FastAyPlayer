@@ -1,0 +1,78 @@
+name: Makefile CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build_z80:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get rasm latest version
+        run: |
+          # Fetch the latest release version
+          latest_version=$(curl -s https://api.github.com/repos/EdouardBERGE/rasm/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+          source_archive=${latest_version}.tar.gz
+          # Construct the download URL
+          download_url="https://github.com/EdouardBERGE/rasm/archive/refs/tags/${source_archive}"
+          # Download the tar.gz file
+          curl -L "$download_url" -o "$source_archive"
+          tar xf "$source_archive"
+          cd rasm-${latest_version#v}
+          make
+          cp rasm.exe /tmp
+          cd ..
+        
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build z80 binaries
+        run: |
+          cd src
+          cp /tmp/rasm.exe rasm
+          export PATH=$(pwd):$PATH
+          make player
+
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: bin_z80
+          path: src/Build
+
+  build_win:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build app for release
+        run: msbuild src/FapCrunch/FapCrunch.sln /t:FapCrunch /p:Configuration="Release"
+
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: bin_windows
+          path: src/Release
+
+  build_linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build app for release
+        run: cd src && make cruncher
+
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: bin_linux
+          path: src/Build
