@@ -28,6 +28,7 @@ test: $(TEST_TARGET).sna
 # Build rules
 #
 $(CRUNCHER_TARGET): FapCrunch/*.cpp FapCrunch/*.h
+	mkdir -p $(BUILD_DIR)
 	g++ -std=c++11 $(CFLAGS) FapCrunch/*.cpp -o $(CRUNCHER_TARGET)
 
 $(PLAYER_TARGET): $(PLAYER_DIR)/Fap*.asm
