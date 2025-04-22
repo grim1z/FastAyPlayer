@@ -206,13 +206,13 @@ int main(int argc, char* argv[])
 
 	if (ymData.R12IsConst())
 	{
-		int exeTime[] = { 592, 616, 640, 664 };
+		int exeTime[] = { 596, 620, 644, 668 };
 		printf("  - Play time: %d NOPS\n", exeTime[nrRegistersToPlay - 11]);
 		printf("  - Decrunch buffer size: 3144 (#B42)\n");
 	}
 	else
 	{
-		int exeTime[] = { 660, 684, 708, 732 };
+		int exeTime[] = { 664, 688, 712, 736 };
 
 		printf("  - Play time: %d NOPS\n", exeTime[nrRegistersToPlay - 11]);
 		printf("  - Decrunch buffer size: 2888 (#C48)\n");

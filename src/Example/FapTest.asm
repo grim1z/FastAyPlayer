@@ -4,7 +4,7 @@
         RUN	$
 
         BuffSize	equ #B42		; Size of replay buffer given by the cruncher.
-        PlayerSize      equ 609			; Size of the FAP player code
+        PlayerSize      equ 611			; Size of the FAP player code
 
         FapInit	equ #C000       	        ; Address of the player initialization code.
         FapBuff	equ #4000       	        ; Address of the decrunch buffers (low order byte MUST BE 0).
