@@ -87,8 +87,8 @@ bool WriteFile(char* fileName,
 	// Write "SkipR12" flag
 	fwrite(&r12IsConst, 1, sizeof(uint8_t), out);
 
-	// The player behaves badly if R12 is not constant.Hopefully, this is a very uncommon case.
-	// However, in this case, we have to take a large secutiry gap to reach a sufficient decrunch ratio :(
+	// The player behaves badly if R12 is not constant. Hopefully, this is a very uncommon case.
+	// However, in this case, we have to take a large security gap to reach a sufficient decrunch ratio :(
 	if (!ymData.R12IsConst())
 		registersToPlay = registersToPlay + 2;
 
@@ -99,7 +99,7 @@ bool WriteFile(char* fileName,
 	uint8_t* initValues = ymData.GetInitValues();
 	fwrite(initValues, NR_YM_REGISTERS, sizeof(uint8_t), out);
 
-	// Write : address of buffers for each register
+	// Write: address of buffers for each register
 	uint16_t bufferOffset[NR_FAP_REGISTERS] = { 0 };
 	bufferOffset[0] = 2 + NR_YM_REGISTERS + 2 * NR_FAP_REGISTERS;
 
@@ -109,7 +109,7 @@ bool WriteFile(char* fileName,
 	}
 	fwrite(bufferOffset, NR_FAP_REGISTERS, sizeof(uint16_t), out);
 
-	// Write : register data + loop marker + start address of register data in memory
+	// Write: register data + loop marker + start address of register data in memory
 	uint8_t loopMarker = 0x1F;
 	for (int r = 0; r < NR_FAP_REGISTERS; r++)
 	{
@@ -200,7 +200,7 @@ int main(int argc, char* argv[])
 	bool success = WriteFile(dstFile, ymData, crunchData, crunchSize, loopOffset, nrRegistersToPlay);
 	if (!success)
 	{
-		printf("Error while write result file\n");
+		printf("Error while writing result file\n");
 		abort();
 	}
 

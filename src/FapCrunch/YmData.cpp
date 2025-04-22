@@ -87,7 +87,7 @@ void YmData::SmoothRegisters(uint8_t* periodLow, uint8_t* periodHigh, uint8_t* v
 		bool toneOff = (mixer[i] & voiceToneMask) == voiceToneMask;
 		bool noiseOff = (mixer[i] & voiceNoiseMask) == voiceNoiseMask;
 
-		// Smooth Period if volume is 0 or tone if off.
+		// Smooth Period if it cannot be heard (volume is 0 or tone is off).
 		if (volume[i] == 0 || toneOff)
 		{
 			periodLow[i] = periodLow[i - 1];
@@ -102,7 +102,7 @@ void YmData::SmoothRegisters(uint8_t* periodLow, uint8_t* periodHigh, uint8_t* v
 }
 
 //
-// Switch all 1 to 0 for period low byte.The 1 value will later be use to mark a "delta-play".
+// Switch all 1 to 0 for period low byte. The value 1 will later be used as a "delta-play" marker.
 //
 void YmData::FixPeriodLow(uint8_t* periodLow)
 {
@@ -131,7 +131,7 @@ void YmData::SmoothNoise()
 }
 
 //
-// Merge two 4 bits registers into one register.
+// Merge two 4 bit registers into one register.
 //
 void YmData::MergeRegisters(uint8_t* R1, uint8_t* R2)
 {
@@ -142,7 +142,7 @@ void YmData::MergeRegisters(uint8_t* R1, uint8_t* R2)
 }
 
 //
-// Add delta-play flags for registers 6 and 13 in the register 5.
+// Add delta-play flags for registers 5 and 13 into the register 6.
 //
 void YmData::AdjustR6andR13()
 {
@@ -169,7 +169,7 @@ void YmData::AdjustR6andR13()
 }
 
 //
-//Insert markers for repeating value(used to quickly avoid to program a register)
+// Insert markers for repeated value (used to quickly avoid to program a register)
 //
 void YmData::PrecaclDeltaPlay(int regId, int markerValue)
 {
@@ -186,7 +186,7 @@ void YmData::PrecaclDeltaPlay(int regId, int markerValue)
 			deltaPlay = false;
 		}
 
-		// Special case for 1st mixer and volume values.Avoid a delta - play since the mixer and volume are forced to mute in init values.
+		// Special case for 1st mixer and volume values. Avoid a delta-play since the mixer and volume are forced to mute in init values.
 		if ((f == 0) &&
 			(regId >= 7) &&
 			(regId <= 10))
@@ -194,7 +194,7 @@ void YmData::PrecaclDeltaPlay(int regId, int markerValue)
 			deltaPlay = false;
 		}
 
-		// Special case for a non 0 loop frame.The current value must also be equal to the one in last frame to enable delta - play.
+		// Special case for a non 0 loop frame. The current value must also be equal to the one in the last frame to enable delta-play.
 		if (GetLoopFrame() != 0 &&
 			GetLoopFrame() == f &&
 			registerData[f] != initVal)
@@ -220,7 +220,7 @@ void YmData::PrecaclDeltaPlay(int regId, int markerValue)
 ///////////////////////////////////////////////////////////////////////////////////
 
 //
-//Compute the distance between the current register value and the previous value
+// Compute the distance between the current register value and the previous value
 //
 int YmData::DistFromPrevValue(uint8_t* registerData, int current, int next, uint8_t markerValue, bool volumeRegister)
 {
@@ -316,7 +316,7 @@ int YmData::DelayOneRegister(int current, int next)
 }
 
 //
-//Count max register changes for one frame and limit changes to 11.
+// Count max register changes for one frame and limit changes to 11.
 //
 int YmData::CountAndLimitRegChangesOneFrame(int current, int prev, int next, bool limit11, bool limit12)
 {
@@ -368,7 +368,7 @@ int YmData::CountAndLimitRegChangesOneFrame(int current, int prev, int next, boo
 	if (limit11 and changes > 11)
 		changes = changes - DelayOneRegister(current, next);
 
-
+	return changes;
 	return changes;
 }
 
@@ -470,7 +470,7 @@ bool YmData::LoadFile(const char* FileName)
 	YmLoad YmFile;
 
 	//
-	// Read the Ym file and print some informations.
+	// Read the Ym file and print some information.
 	//
 	if (!YmFile.load(FileName))
 	{

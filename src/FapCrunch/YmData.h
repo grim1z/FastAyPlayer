@@ -33,7 +33,7 @@ private:
 	void CountAndLimitRegChangesInternal(int* maxChanges, bool Limit11, bool Limit12);
 
 private:
-	int	nbFrames;
+	int nbFrames;
 	int loopFrame;
 	bool R12IsConstant;
 
