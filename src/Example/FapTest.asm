@@ -24,36 +24,36 @@
         ld	a, hi(FapBuff)	; High byte of the decrunch buffer address.
         ld	bc, FapPlay     ; Address of the player binary.
         ld	de, ReturnAddr  ; Address to jump after playing a song frame.
-        ld	hl, FapData     ; Address of song data.    
-        call	FapInit    
+        ld	hl, FapData     ; Address of song data.
+        call	FapInit
 
         ;
         ; Main loop
         ;
 MainLoop:
-        ld	b, #F5    
-        in	a, (c)    
-        rra    
-        jr	nc, MainLoop    
+        ld	b, #F5
+        in	a, (c)
+        rra
+        jr	nc, MainLoop
 
-        di			; Prevent interrupt apocalypse    
-        ld	(RestoreSp), sp	; Save our precious stack-pointer    
-        jp	FapPlay		; Jump into the replay-routine    
+        di			; Prevent interrupt apocalypse
+        ld	(RestoreSp), sp	; Save our precious stack-pointer
+        jp	FapPlay		; Jump into the replay-routine
 
 ReturnAddr:		; Return address the replay-routine will jump back to
 
 RestoreSp = $+1
         ld	sp, 0		; Restore our precious stack-pointer
-        ei			; We may enable the maskable interrupts again    
+        ei			; We may enable the maskable interrupts again
 
-        halt		; Wait to make sure the VBL is over.    
-        halt    
+        halt		; Wait to make sure the VBL is over.
+        halt
 
-        jp	MainLoop    
+        jp	MainLoop
 
         ;
         ; Load files
-        ;    
+        ;
         org	FapInit: incbin "../Build/fap-init.bin"
         org	FapPlay: incbin "../Build/fap-play.bin"
         org	FapData: incbin "../Samples/fap/Tom&Jerry - Boules Et Bits (Extended).fap"

@@ -93,7 +93,7 @@ SkipRegister13
         inc	d
         ld	a, (hl)
         bit	7, a
-        jr	nz, SkipRegister6      
+        jr	nz, SkipRegister6
         WriteToPSGReg	d
 SkipRegister6:
         inc	h
@@ -125,7 +125,7 @@ SkipRegister6:
         inc	d
         WriteToPSGRegSkip	d, b
         inc	h
-        
+
         ;
         ; Write to register 11
         ;
@@ -177,7 +177,7 @@ Reloc4 = $+2
         sub	b       ; Compute distance between player read position and current position in decrunch buffer.
         cp	28      ; Leave a security gap between the current decrunch position and the player position.
         jr	c, SkipDecrunchTrampoline
-        
+
         ld	a, h
 SwitchResToSet=$+1
         res	7, h
@@ -188,7 +188,7 @@ SwitchResToSet=$+1
 
         ; SP = current position in decrunch source buffer
         ; HL = current position in decrunch destination buffer
-        ; DE = 
+        ; DE =
         ; BC = B: C: number of values to decrunch
         ; ly = number of markers decoded
 
@@ -257,7 +257,7 @@ Reloc7 = $+1
 PlayR12Trampoline:
 Reloc8 = $+1
         jp	PlayR12
-        
+
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;
@@ -270,7 +270,7 @@ CopyLiteral:
         jr	z, DoFramesLoop
         ld	a, e
         inc	a
-        
+
 RestartCopyLiteral:
         cp	c
         jr	nc, CopySubLiteralChain
@@ -300,7 +300,7 @@ RestartPausedDecrunch:
         rla             ; if Bit 7 is set -> restart a Copy Literal
 SwitchNcToC:
         jr	nc, RestartPausedCopyFromDict
-        
+
         ;
         ; Restart Copy Literal
         ;
@@ -323,7 +323,7 @@ RestartPausedCopyFromDict:
 RestartSubCopyFromDict:
         _AdjustCopySizeWithRemainingSlots	(void)
         nop
-        jr	RestartCopySubStringFromDict      
+        jr	RestartCopySubStringFromDict
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -332,7 +332,7 @@ RestartSubCopyFromDict:
         ;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        
+
 DoFramesLoop:
         dec     sp
         exx
@@ -370,7 +370,7 @@ CopySubStringFromDict:
         _ComputeCopyFromDictSourceAddr	(void)                ; 4 (+1) NOPS
 
 RestartCopySubStringFromDict:
-        _CopyFromDictLoop	c                             ; 12 * N NOPS        
+        _CopyFromDictLoop	c                             ; 12 * N NOPS
         ld	d, b
         ld	a, c
 
@@ -439,7 +439,7 @@ SkipR1_3:
         SKIP_NOPS	3
 Reloc11 = $+1
         jp      SkipR1_3Return
-        
+
 SkipDecrunch:
 Reloc12 = $+1
         ld	a, (NrValuesToDecrunch)

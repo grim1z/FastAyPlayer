@@ -4,7 +4,7 @@
 ;
 
         org	#0000
-        
+
         include	"FapMacro.asm"
 
 FapPlay:

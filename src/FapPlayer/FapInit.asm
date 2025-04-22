@@ -1,5 +1,5 @@
         NR_REGISTERS_TO_DECRUNCH	equ #0C
-        
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                                               ;;
@@ -86,7 +86,7 @@ RelocMainLoop:
         ld	sp, ix                  ; Restore SP
 
         ;
-        ; Initialize DataBufferReset in the player code. 
+        ; Initialize DataBufferReset in the player code.
         ;
         WriteHLToPlayerCodeWithReloc	DataBufferReset
 

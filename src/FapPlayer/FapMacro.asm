@@ -74,7 +74,7 @@ MEND
 ;
 MACRO   _CopyFromDictLoop	LoopReg ; 10 * N NOPS - 1
 @CopyLoop:
-        ld	a, (de)     
+        ld	a, (de)
         ld	(hl), a
         inc	l
         inc	e

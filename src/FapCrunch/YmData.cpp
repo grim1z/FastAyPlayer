@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
-#include <algorithm> 
+#include <algorithm>
 
 #include "YmData.h"
 #include "YmLoad.h"
@@ -407,9 +407,9 @@ void YmData::CountAndLimitRegChangesInternal(int maxChanges[NR_YM_REGISTERS + 1]
 	}
 }
 
-// 
+//
 // Count max register changes and limit changes.
-// 
+//
 uint8_t YmData::CountAndLimitRegChanges(float Threshold)
 {
 	int maxChanges[NR_YM_REGISTERS + 1] = { 0 };
