@@ -322,41 +322,43 @@ int YmData::CountAndLimitRegChangesOneFrame(int current, int prev, int next, boo
 {
 	int changes = 0;
 
-	if (pRegisters[0][current] != 1)
+	if (pRegisters[0][current] != 1) // 1 is the marker for reg0
 		changes = changes + 1;
 
+	// at this point, pRegisters[1] encodes both reg1 and reg3
 	if (pRegisters[1][current] != pRegisters[1][prev])
 		changes = changes + 2;
 
-	if (pRegisters[2][current] != 1)
+	if (pRegisters[2][current] != 1) // 1 is the marker for reg2
 		changes = changes + 1;
 
 	// Register[3] handled with register 1
-	if (pRegisters[4][current] != 1)
+
+	if (pRegisters[4][current] != 1) // 1 is the marker for reg4
 		changes = changes + 1;
 
-	if ((pRegisters[6][current] & 0x80) == 0) // Register 6
+	if ((pRegisters[6][current] & 0x80) == 0) // Register 6 change
 		changes = changes + 1;
 
-	if ((pRegisters[6][current] & 0x40) == 0) // Register 13
+	if ((pRegisters[6][current] & 0x40) == 0) // Register 13 change
 		changes = changes + 1;
 
-	if ((pRegisters[6][current] & 0x20) == 0) // Register 5
+	if ((pRegisters[6][current] & 0x20) == 0) // Register 5 change
 		changes = changes + 1;
 
-	if (pRegisters[7][current] != 0xF4)
+	if (pRegisters[7][current] != 0xF4) // 0xf4 is the marker for reg7
 		changes = changes + 1;
 
-	if (pRegisters[8][current] != 0xF4)
+	if (pRegisters[8][current] != 0xF4) // 0xf4 is the marker for reg8
 		changes = changes + 1;
 
-	if (pRegisters[9][current] != 0xF4)
+	if (pRegisters[9][current] != 0xF4) // 0xf4 is the marker for reg9
 		changes = changes + 1;
 
-	if (pRegisters[10][current] != 0xF4)
+	if (pRegisters[10][current] != 0xF4) // 0xf4 is the marker for reg10
 		changes = changes + 1;
 
-	if (pRegisters[11][current] != 1)
+	if (pRegisters[11][current] != 1) // 1 is the marker for reg11
 		changes = changes + 1;
 
 	if (pRegisters[12][current] != pRegisters[12][prev])
@@ -368,7 +370,6 @@ int YmData::CountAndLimitRegChangesOneFrame(int current, int prev, int next, boo
 	if (limit11 and changes > 11)
 		changes = changes - DelayOneRegister(current, next);
 
-	return changes;
 	return changes;
 }
 
@@ -415,11 +416,9 @@ uint8_t YmData::CountAndLimitRegChanges(float Threshold)
 	int maxChanges[NR_YM_REGISTERS + 1] = { 0 };
 
 	// Dry run to compute the histogram of register changes
-
 	CountAndLimitRegChangesInternal(maxChanges, false, false);
 
 	// Check if we have to limit the number of maximum register changes
-
 	int Count = 0;
 	bool Limit11 = false;
 	bool Limit12 = false;
@@ -518,7 +517,7 @@ void YmData::Optimize()
 	PrecaclDeltaPlay(2, 0x01);
 	PrecaclDeltaPlay(4, 0x01);
 	PrecaclDeltaPlay(6, 0x80);
-	PrecaclDeltaPlay(7, 0xF4);
+	PrecaclDeltaPlay(7, 0xF4); // 0xF4 is used because it allows optimizations of the player as it matches PPI port address
 	PrecaclDeltaPlay(8, 0xF4);
 	PrecaclDeltaPlay(9, 0xF4);
 	PrecaclDeltaPlay(10, 0xF4);
