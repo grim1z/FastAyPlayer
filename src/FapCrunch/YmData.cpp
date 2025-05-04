@@ -143,6 +143,8 @@ void YmData::MergeRegisters(uint8_t* R1, uint8_t* R2)
 
 //
 // Add delta-play flags for registers 5 and 13 into the register 6.
+// Note: r5 here is actually a merge of r5 and r13 because of previous
+//       call MergeRegisters(pRegisters[5], pRegisters[13]);
 //
 void YmData::AdjustR6andR13()
 {
@@ -152,7 +154,7 @@ void YmData::AdjustR6andR13()
 
 	for (int i = 1; i < nbFrames; i++)
 	{
-		if (R5[i] == R5[i - 1])
+		if (R5[i] & 0x0f == R5[i - 1] & 0x0f)
 		{
 			R6[i] = R6[i] | 0x20; // TODO: ajouter une macro
 		}
