@@ -176,22 +176,22 @@ InitDecrunchStateLoop:
 
         ; Write initial position in decrunch (dest) buffer.
         exa
-        ld	(de), a
+        ld	(de), a ; high byte (big endian)
         inc     a
         exa
         inc	de
-        ld	(de), a
+        ld	(de), a ; low byte (big endian)
         inc	de
 
         ; Write initial position in crunched (src) buffer.
         ld	a, (hl)
         add	a, c
-        ld	(de), a
+        ld	(de), a ; low byte
         inc	de
         inc	hl
         ld	a, (hl)
         adc	a, b
-        ld	(de), a
+        ld	(de), a ; high byte
         inc	de
         inc	hl
 
