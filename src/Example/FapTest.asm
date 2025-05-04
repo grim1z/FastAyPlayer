@@ -57,3 +57,4 @@ RestoreSp = $+1
         org	FapInit: incbin "../Build/fap-init.bin"
         org	FapPlay: incbin "../Build/fap-play.bin"
         org	FapData: incbin "../Samples/fap/Tom&Jerry - Boules Et Bits (Extended).fap"
+assert $<#7fff,"Error: fap data shall not cross #8000 boundary!"
