@@ -19,6 +19,7 @@ Reloc1 = $+1
         exx
 NrRegistersToPlay = $+1
         ld	bc, #F400       ; Max number of registers to play is written in the C register by the init code.
+                                ; this is the maximum number of registers to update within the same frame, as detected by the cruncher
         ld	de, #0201
 
         ;
@@ -168,29 +169,23 @@ DecrunchStateLoopValue = $+1
 SkipBufferReset:
         ld	l, a
         ld	sp, hl
-        ld	a, e    ; Backup current position of the player in the decrunched buffer
+        ld	a, e    ; Backup current read position of the player in the decrunched buffer
         pop	de      ; d = restart if not null       e = Lower byte of source address if restart copy from windows. Undef otherwise.
-        pop	bc      ; Current position in decrunch buffer (address bytes are swaped : B=low address byte / C = High address byte)
+        pop	bc      ; Current write position in decrunch buffer (address bytes are swapped: B=low address byte / C = High address byte)
         pop	hl      ; Current position in crunched data buffer
 Reloc4 = $+2
         ld	(ReLoadDecrunchSavedState), sp
-        sub	b       ; Compute distance between player read position and current position in decrunch buffer.
+        sub	b       ; Compute distance between player read position and current write position in decrunch buffer.
         cp	28      ; Leave a security gap between the current decrunch position and the player position.
         jr	c, SkipDecrunchTrampoline
 
         ld	a, h
 SwitchResToSet=$+1
         res	7, h
-        ld	sp, hl          ; Load current position in decrunch buffer
+        ld	sp, hl
 
         ld	h, c
         ld	l, b
-
-        ; SP = current position in decrunch source buffer
-        ; HL = current position in decrunch destination buffer
-        ; DE =
-        ; BC = B: C: number of values to decrunch
-        ; ly = number of markers decoded
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -204,6 +199,12 @@ NrValuesToDecrunch = $+1
         ld	c, 220
 NrDecrunchLoop = $+2
         ld	ly, 50
+        ; SP = current position in decrunch source buffer (crunched data)
+        ; HL = current position in decrunch destination buffer
+        ; D = restart paused decrunch if not null (remaining data length)
+        ; E = Lower byte of source address if restart copy from windows. Undef otherwise
+        ; C = number of values to decrunch
+        ; ly = number of markers decoded
         inc	d
         dec	d
         jr	nz, RestartPausedDecrunch
@@ -214,11 +215,12 @@ NrDecrunchLoop = $+2
 FetchNewCrunchMarker:
         pop	de
 
-        ld	a, #1F
+        ld	a, #1F ; loop marker
         cp      e
 
         jr	nc, CopyLiteral         ; A < 1F --> Copy literals
                                         ; A > 1F --> Copy from dictionnary
+                                        ; A = 1F --> Loop marker (DoFramesLoop)
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -230,8 +232,8 @@ FetchNewCrunchMarker:
 
 CopyFromDict:
         ld	a, e
-        sub	#1d
-        cp	c
+        sub	#1d ; A = dict copy length
+        cp	c   ; C is the number of values to decrunch
         jr	nc, CopySubStringFromDict
 
         _UpdateNrCopySlot	(void)                  ; 4 NOPS
@@ -269,10 +271,10 @@ Reloc8 = $+1
 CopyLiteral:
         jr	z, DoFramesLoop
         ld	a, e
-        inc	a
+        inc	a ; A = literal copy length
 
 RestartCopyLiteral:
-        cp	c
+        cp	c ; C is the number of values to decrunch
         jr	nc, CopySubLiteralChain
 
         _UpdateNrCopySlot	(void)          ; 4 NOPS
@@ -291,7 +293,7 @@ RestartCopyLiteral:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
         ; D != 0 --> Restart a paused decrunch
-        ;   if bit 7(H) = 1
+        ;   if bit 7(A) = 1
         ;      Restart Copy Literal     D = remaining length    E = unknown
         ;   else
         ;      Restart Copy From Dict   D = remaining length    E = Lower byte
@@ -313,7 +315,7 @@ RestartPausedCopyFromDict:
         SKIP_NOPS 5
 
         ld	a, d
-        cp	c
+        cp	c ; C is the number of values to decrunch
         ld	d, h
         jr	nc, RestartSubCopyFromDict
         nop
@@ -384,7 +386,7 @@ RestartCopySubStringFromDict:
 CopySubLiteralChain:
         sub     c
         _CopyLiteralLoop	c
-        ld	d, a
+        ld	d, a ; D = remaining literals to copy for this marker
 
 DecrunchFinalize:
         ld	a, #80

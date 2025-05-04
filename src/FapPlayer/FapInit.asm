@@ -103,7 +103,7 @@ RelocMainLoop:
         ; Let skip the R12 play.
         dec     xl
         exx
-        ld	hl, #8779       ; Overwrite JR to PlayR12 with some instructions
+        ld	hl, #8779       ; Overwrite JR to PlayR12 with "ld a,c : add a,a"
         WriteHLToPlayerCodeWithReloc    SkipR12OverwriteJR
         exx
 
@@ -112,14 +112,14 @@ NoSkipR12:
         add	a, a    ; A = 2 * N
         ld	b, a    ; B = 2 * N
         add	a, a    ; A = 4 * N
-        add	b       ; A = 6 * N
+        add	b       ; A = 6 * N ; There are 6 state save bytes per stream to decrunch
 
         exx
         Write8ToPlayerCodeWithReloc	DecrunchStateLoopValue, a
         exx
 
         ;
-        ; Load number of registers to play
+        ; Load number of registers to play (max number of registers to update in one frame)
         ;
         ld	a, (hl)
         inc	hl
@@ -164,7 +164,7 @@ InitRegisterLoop:
         ;
         ; Initialize decrunch save state array.
         ;
-        ld	xh, xl
+        ld	xh, xl ; for each stream to decrunch
         pop     bc
 InitDecrunchStateLoop:
         ; Write #0000 (restart decrunch flags)
@@ -217,7 +217,7 @@ InitDecrunchStateLoop:
         exx
 
         ;
-        ; Loop to initialize decrunch buffers
+        ; Loop to initialize all decrunch buffers
         ;
         ld	xh, xl
 InitDecrunchBufferLoop:
