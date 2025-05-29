@@ -336,10 +336,12 @@ int YmData::CountAndLimitRegChangesOneFrame(int current, int prev, int next, boo
 	if (pRegisters[2][current] != 1) // 1 is the marker for reg2
 		changes = changes + 1;
 
-	// Register[3] handled with register 1
+	// Register[3] handled together with register 1
 
 	if (pRegisters[4][current] != 1) // 1 is the marker for reg4
 		changes = changes + 1;
+
+	// Register[5] handled with register 6 flag
 
 	if ((pRegisters[6][current] & 0x80) == 0) // Register 6 change
 		changes = changes + 1;
