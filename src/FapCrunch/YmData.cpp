@@ -165,7 +165,9 @@ void YmData::AdjustR6andR13()
 		if (R13[i] == 0xFF)
 		{
 			R6[i] = R6[i] | 0x40; // TODO: ajouter une macro
-			R13[i] = R13[i - 1];   // TODO: this line is probably useless... Check this.
+			//if (i != 0) R13[i] = R13[i - 1];   // TODO: this line is probably useless... Check this.
+			//[zik] could be a good idea to improve compression, but r13 is not used anymore (r13 has been merged in r5 stream)
+			//      Add a 'if' to fix a bug when i is 0
 		}
 	}
 }
