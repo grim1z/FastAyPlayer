@@ -32,7 +32,7 @@ void YmData::FixHoles()
 		{
 			r11[i] = r11[i - 1];
 			r12[i] = r12[i - 1];
-			r13[i] = r13[i - 1];
+			//r13[i] = r13[i - 1]; // [zik] This can create problem on r13 (for example, just after a retrig)
 		}
 	}
 }
