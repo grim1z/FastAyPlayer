@@ -204,19 +204,18 @@ int main(int argc, char* argv[])
 		abort();
 	}
 
+	uint16_t decrunchBufferSize = (256 + 6) * (NR_FAP_REGISTERS - (ymData.R12IsConst() ? 1 : 0));
 	if (ymData.R12IsConst())
 	{
 		int exeTime[] = { 596, 620, 644, 668 };
 		printf("  - Play time: %d NOPS\n", exeTime[nrRegistersToPlay - 11]);
-		printf("  - Decrunch buffer size: 2882 (#B42)\n");
 	}
 	else
 	{
 		int exeTime[] = { 664, 688, 712, 736 };
-
 		printf("  - Play time: %d NOPS\n", exeTime[nrRegistersToPlay - 11]);
-		printf("  - Decrunch buffer size: 3144 (#C48)\n");
 	}
+	printf("  - Decrunch buffer size: %d (#%X)\n", decrunchBufferSize, decrunchBufferSize);
 
 	return 0;
 }
