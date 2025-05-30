@@ -92,14 +92,14 @@ bool WriteFile(char* fileName,
 	if (!ymData.R12IsConst())
 		registersToPlay = registersToPlay + 2;
 
-	// Write number of registers to play
+	// Write max number of registers to play
 	fwrite(&registersToPlay, 1, sizeof(uint8_t), out);
 
-	// Write: initial values for each register
+	// Write: initial value for each register
 	uint8_t* initValues = ymData.GetInitValues();
 	fwrite(initValues, NR_YM_REGISTERS, sizeof(uint8_t), out);
 
-	// Write: address of buffers for each register
+	// Write: address offset of crunched data for each register
 	uint16_t bufferOffset[NR_FAP_REGISTERS] = { 0 };
 	bufferOffset[0] = 2 + NR_YM_REGISTERS + 2 * NR_FAP_REGISTERS;
 
