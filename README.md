@@ -203,4 +203,5 @@ Credits
 
  * Idea and original Z80 code: Hicks/Vanity.
  * Z80 optimizations, PIC and relocation adaptation, cruncher, packaging and documentation: Gozeur/Contrast.
- * Support and testing: Targhan/Arkos, Grim/Seminanceata, toms/Pulpo Corrosivo, Tom et Jerry/GPA, Zik/Futurs'.
+ * Support and testing: Targhan/Arkos, Grim/Semilanceata, toms/Pulpo Corrosivo, Tom et Jerry/GPA.
+ * Additional debugging and testing: Zik/Futurs'.
