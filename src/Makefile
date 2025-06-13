@@ -1,5 +1,10 @@
 RASM = rasm
-FAP_CRUNCH = $(BUILD_DIR)/FapCrunchLin
+
+ifeq "$(shell uname)" "Darwin" 
+ FAP_CRUNCH = $(BUILD_DIR)/FapCrunchMac
+ else
+ FAP_CRUNCH = $(BUILD_DIR)/FapCrunchLin
+endif
 
 #
 # Define directories
@@ -13,7 +18,11 @@ EXAMPLE_DIR = Example
 #
 TEST_TARGET = FapTest
 PLAYER_TARGET = $(BUILD_DIR)/fap-play.bin
-CRUNCHER_TARGET = $(BUILD_DIR)/FapCrunchLin
+ifeq "$(shell uname)" "Darwin" 
+ CRUNCHER_TARGET = $(BUILD_DIR)/FapCrunchMac
+ else
+ CRUNCHER_TARGET = $(BUILD_DIR)/FapCrunchLin
+endif
 RELEASE_TARGET = FapRelease.zip
 
 #
