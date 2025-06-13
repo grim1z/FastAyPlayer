@@ -10,6 +10,10 @@
 #ifdef _MSC_VER
 #define bswap_16(x) _byteswap_ushort(x)
 #define bswap_32(x) _byteswap_ulong(x)
+#elif defined(__APPLE__)
+#include <libkern/OSByteOrder.h>  
+#define bswap_16(x) OSSwapInt16(x)
+#define bswap_32(x) OSSwapInt32(x)
 #else
 #include <byteswap.h>
 #endif
@@ -96,7 +100,7 @@ bool YmLoad::load(const char* fileName)
 	fclose(in);
 
 	//---------------------------------------------------
-	// Lecture des donn‚es YM:
+	// Lecture des donn?es YM:
 	//---------------------------------------------------
 	if (!ymDecode())
 	{
