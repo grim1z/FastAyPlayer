@@ -190,7 +190,7 @@ Memory considerations
 
   * Music data size:\
     The music data size depends on the given YM file and the optional usage of the cruncher *frame shifting option*. On average, a FAP file size is between 2Kb and 4Kb per minute.\
-    If saving disk space is important for you, you can concider crunching a FAP file. On average, crunching a FAP file using an *LZ-like* algorithm reduces its size by 30%.
+    If saving disk space is important for you, you can consider crunching a FAP file. On average, crunching a FAP file using an *LZ-like* algorithm reduces its size by 30%.
 
   * Initialisation code:\
     If you only want to replay a single music, the init-routine can be completely disposed of right after being used (eg. put it where it can happily be overwritten with something else, such as video-ram).
