@@ -82,7 +82,6 @@ We will pass all these information to the init-routine through Z80 registers as 
   * **`DE`** = Address where the player will jump back into your program.
   * **`HL`** = Address of the FAP music data.
 Don't forget to disable interrupts (di), as initialisation makes massive use of the stack.
-If you want to play the same music several times, you'll need to save and restore the initialization routine.
 
 ### Step 4: Let's play!
 
@@ -193,7 +192,7 @@ Memory considerations
     If saving disk space is important for you, you can consider crunching a FAP file. On average, crunching a FAP file using an *LZ-like* algorithm reduces its size by 30%.
 
   * Initialisation code:\
-    If you only want to replay a single music, the init-routine can be completely disposed of right after being used (eg. put it where it can happily be overwritten with something else, such as video-ram).
+    If you only want to replay a single music, the init-routine can be completely disposed of right after being used (eg. put it where it can happily be overwritten with something else, such as video-ram). If you want to play the same music several times, you'll need to save and restore the initialization code.
 
   * Music data header:\
     If you need a few extra bytes in memory to achieve your killing effect, you might consider overwriting the FAP data header. After calling the initialization-routine, you can freely overwrite the first 28 bytes of the music data.
