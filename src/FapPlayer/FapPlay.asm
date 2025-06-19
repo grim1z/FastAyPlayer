@@ -269,7 +269,7 @@ Reloc8 = $+1
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 CopyLiteral:
-        jr	z, DoFramesLoop
+        jr	z, DoFramesLoop                ; if Z, end of data for this register = loop
         ld	a, e
         inc	a ; A = literal copy length
 
@@ -330,17 +330,17 @@ RestartSubCopyFromDict:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;
-        ;;      Do Frames loop
+        ;;      Do Frames loop = if a register's data flow has reached its end
         ;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 DoFramesLoop:
-        dec     sp
+        dec     sp                                ; loop_flag is poped, but 1b, so we must move back 1b
         exx
-        pop	hl
+        pop	hl                                ; loop_flag is followed by the flow start offset (2b)
 DataBufferReset = $+1
-        ld	bc, #0000
+        ld	bc, #0000                         ; allow PIC
         add	hl, bc
         ld	sp, hl
         exx
