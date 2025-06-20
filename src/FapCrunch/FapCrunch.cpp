@@ -125,6 +125,8 @@ bool WriteFile(char* fileName,
 	long fileSize = ftell(out);
 	printf("  - File size: %ld (0x%lX)\n", fileSize, fileSize);
 
+	fclose(out);
+	
 	return true;
 }
 
