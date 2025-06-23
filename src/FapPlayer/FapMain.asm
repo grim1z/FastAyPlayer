@@ -1,6 +1,7 @@
 ;
 ;       Fucking Fast AY Player - 2024
 ;         by Hicks/Vanity and Gozeur
+;                  (v1.0.2)
 ;
 
         org	#0000
