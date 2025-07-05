@@ -23,7 +23,7 @@ MACRO   SKIP_NOPS	Nops
                         jr	$+2     ; Add hl, RR    ; inc (hl)      ; pop hl
                 else
                         if	{Nops}	== 5
-                                cp	a, (ix) ; WASTE TIME WITH FEW BYTES (5 NOPS - 3 BYTES)
+                                cp	a, (ix + 0) ; WASTE TIME WITH FEW BYTES (5 NOPS - 3 BYTES)
                         else
                                 if	{Nops}	== 6
                                         inc	(hl)    ; WASTE TIME WITH FEW BYTES (3 NOPS - 1 BYTE)
