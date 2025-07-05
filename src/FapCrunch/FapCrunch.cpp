@@ -74,7 +74,6 @@ bool WriteFile(char* fileName,
 	int crunchSize[NR_FAP_REGISTERS],
 	int loopOffset[NR_FAP_REGISTERS],
 	uint8_t registersToPlay)
-
 {
 	FILE* out = fopen(fileName, "wb");
 	uint8_t r12IsConst = ymData.R12IsConst();
@@ -126,7 +125,6 @@ bool WriteFile(char* fileName,
 	printf("  - File size: %ld (0x%lX)\n", fileSize, fileSize);
 
 	fclose(out);
-	
 	return true;
 }
 
