@@ -25,7 +25,9 @@
         ld	bc, FapPlay     ; Address of the player binary.
         ld	de, ReturnAddr  ; Address to jump after playing a song frame.
         ld	hl, FapData     ; Address of song data.
+        di
         call	FapInit
+        ei
 
         ;
         ; Main loop
