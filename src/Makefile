@@ -57,7 +57,7 @@ $(TEST_TARGET).sna: $(EXAMPLE_DIR)/FapTest.asm player
 clean:
 	rm -rf $(BUILD_DIR) $(PLAYER_TARGET) $(CRUNCHER_TARGET) $(RELEASE_TARGET) *.sna
 
-ym:
+ym: $(FAP_CRUNCH)
 	$(FAP_CRUNCH) "Samples/ym/FenyxKell - Bobline.ym" "Samples/fap/FenyxKell - Bobline.fap"
 	$(FAP_CRUNCH) "Samples/ym/Targhan - Hocus Pocus.ym" "Samples/fap/Targhan - Hocus Pocus.fap"
 	$(FAP_CRUNCH) "Samples/ym/Tom&Jerry - From Scratch - Part 1.ym" "Samples/fap/Tom&Jerry - From Scratch - Part 1.fap"
