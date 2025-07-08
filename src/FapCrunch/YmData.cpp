@@ -154,8 +154,9 @@ void YmData::AdjustR6andR13()
 
 	for (int i = 1; i < nbFrames; i++)
 	{
-		if (R5[i] & 0x0f == R5[i - 1] & 0x0f)
+		if ((R5[i] & 0x0f) == (R5[i - 1] & 0x0f))
 		{
+			// no r5 change => set flag
 			R6[i] = R6[i] | 0x20; // TODO: ajouter une macro
 		}
 	}
@@ -164,6 +165,7 @@ void YmData::AdjustR6andR13()
 	{
 		if (R13[i] == 0xFF)
 		{
+			// no r13 change & no retrig => set flag
 			R6[i] = R6[i] | 0x40; // TODO: ajouter une macro
 			//if (i != 0) R13[i] = R13[i - 1];   // TODO: this line is probably useless... Check this.
 			//[zik] could be a good idea to improve compression, but r13 is not used anymore (r13 has been merged in r5 stream)
