@@ -1,6 +1,6 @@
 RASM = rasm
 
-ifeq "$(shell uname)" "Darwin" 
+ifeq "$(shell uname)" "Darwin"
  FAP_CRUNCH = $(BUILD_DIR)/FapCrunchMac
  else
  FAP_CRUNCH = $(BUILD_DIR)/FapCrunchLin
@@ -18,7 +18,7 @@ EXAMPLE_DIR = Example
 #
 TEST_TARGET = FapTest
 PLAYER_TARGET = $(BUILD_DIR)/fap-play.bin
-ifeq "$(shell uname)" "Darwin" 
+ifeq "$(shell uname)" "Darwin"
  CRUNCHER_TARGET = $(BUILD_DIR)/FapCrunchMac
  else
  CRUNCHER_TARGET = $(BUILD_DIR)/FapCrunchLin
