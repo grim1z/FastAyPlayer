@@ -25,6 +25,8 @@ ifeq "$(shell uname)" "Darwin"
 endif
 RELEASE_TARGET = FapRelease.zip
 
+CFLAGS = -Wall -Wextra -Wshadow
+
 #
 # Targets shortcuts
 #
