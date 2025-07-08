@@ -14,7 +14,6 @@ void CrunchSong(YmData& ymData,
 	int crunchSize[NR_FAP_REGISTERS],
 	int loopOffset[NR_FAP_REGISTERS])
 {
-	int rLoop[NR_FAP_REGISTERS] = { 0 };
 	Lzss cruncher(256, 31);
 
 	int loopFrame = ymData.GetLoopFrame();
@@ -22,7 +21,7 @@ void CrunchSong(YmData& ymData,
 
 	printf("\nCrunching:\n");
 
-	for (int r = 0; r < NR_FAP_REGISTERS; r++)
+	for (size_t r = 0; r < NR_FAP_REGISTERS; r++)
 	{
 		uint8_t regIndex = regOrder[r];
 		uint8_t* registerData = ymData.GetRegister(regIndex);
@@ -102,7 +101,7 @@ bool WriteFile(char* fileName,
 	uint16_t bufferOffset[NR_FAP_REGISTERS] = { 0 };
 	bufferOffset[0] = 2 + NR_YM_REGISTERS + 2 * NR_FAP_REGISTERS;
 
-	for (int r = 1; r < NR_FAP_REGISTERS; r++)
+	for (size_t r = 1; r < NR_FAP_REGISTERS; r++)
 	{
 		bufferOffset[r] = bufferOffset[r - 1] + crunchSize[r - 1] + 3;
 	}
@@ -110,7 +109,7 @@ bool WriteFile(char* fileName,
 
 	// Write: register data + loop marker + start address of register data in memory
 	uint8_t loopMarker = 0x1F;
-	for (int r = 0; r < NR_FAP_REGISTERS; r++)
+	for (size_t r = 0; r < NR_FAP_REGISTERS; r++)
 	{
 		if (crunchSize[r])
 		{

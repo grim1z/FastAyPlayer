@@ -23,7 +23,7 @@ void YmData::FixHoles()
 	uint8_t* r10 = GetRegister(10);
 	uint8_t* r11 = GetRegister(11);
 	uint8_t* r12 = GetRegister(12);
-	uint8_t* r13 = GetRegister(13);
+	//uint8_t* r13 = GetRegister(13);
 	for (int i = 1; i < nbFrames; i++)
 	{
 		if (((r8[i] & 0x10) == 0) &&
@@ -81,7 +81,7 @@ void YmData::SmoothRegisters(uint8_t* periodLow, uint8_t* periodHigh, uint8_t* v
 
 	for (int i = 1; i < nbFrames; i++)
 	{
-		int curVol = volume[i] & 0x0F;
+		//int curVol = volume[i] & 0x0F;
 		int prevVol = volume[i - 1] & 0x0F;
 		int volMode = volume[i] & 0x10;
 		bool toneOff = (mixer[i] & voiceToneMask) == voiceToneMask;
@@ -269,18 +269,18 @@ int YmData::DelayOneRegister(int current, int next)
 	uint8_t RegisterMapping[] = { 0, 2, 4, 11, 8, 9, 10 };
 	int Distance[sizeof(RegisterMapping)];
 
-	for (int i = 0; i < sizeof(RegisterMapping); i++)
+	for (size_t i = 0; i < sizeof(RegisterMapping); i++)
 	{
 		Distance[i] = _DIST_MAX;
 	}
 
-	for (int i = 0; i < 4; i++)
+	for (size_t i = 0; i < 4; i++)
 	{
 		int regId = RegisterMapping[i];
 		Distance[i] = DistFromPrevValue(pRegisters[regId], current, next, 1, false);
 	}
 
-	for (int i = 4; i < sizeof(RegisterMapping); i++)
+	for (size_t i = 4; i < sizeof(RegisterMapping); i++)
 	{
 		int regId = RegisterMapping[i];
 		Distance[i] = DistFromPrevValue(pRegisters[regId], current, next, 0xF4, true) * 8;
@@ -290,7 +290,7 @@ int YmData::DelayOneRegister(int current, int next)
 	uint8_t* selectedReg = nullptr;
 	int MinValue = _DIST_MAX;
 	uint8_t replayVal;
-	for (int i = 0; i < sizeof(RegisterMapping); i++)
+	for (size_t i = 0; i < sizeof(RegisterMapping); i++)
 	{
 		if (Distance[i] < MinValue)
 		{
@@ -386,7 +386,6 @@ int YmData::CountAndLimitRegChangesOneFrame(int current, int prev, int next, boo
 //
 void YmData::CountAndLimitRegChangesInternal(int maxChanges[NR_YM_REGISTERS + 1], bool Limit11, bool Limit12)
 {
-	int loopFrame = GetLoopFrame();
 	int PrevIndex = nbFrames - 1;
 	int NextIndex;
 	int nrChanges = 0;

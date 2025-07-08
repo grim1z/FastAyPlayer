@@ -115,6 +115,8 @@ bool YmLoad::load(const char* fileName)
 	printf("  - Nb of frames:    %d\n", nbFrame);
 	printf("  - Loop Frame:      %d\n", loopFrame);
 	printf("  - Interleaved:     %s\n", attrib & A_STREAMINTERLEAVED ? "Yes" : "No");
+	printf("  - YM clock:        %d Hz\n", clock);
+	printf("  - Play rate:       %d Hz\n", playRate);
 
 	printf("\nSong Information:\n");
 	printf("  - Song name: %s\n", pSongName);
@@ -153,8 +155,8 @@ bool YmLoad::ymDecode(void)
 	}
 
 	int nbDrum = Read16ByteSwap(&ptr);
-	int clock = Read32ByteSwap(&ptr);
-	int playrate = Read16ByteSwap(&ptr);
+	clock = Read32ByteSwap(&ptr);
+	playRate = Read16ByteSwap(&ptr);
 	loopFrame = Read32ByteSwap(&ptr);
 	ptr += Read16ByteSwap(&ptr);
 	if (nbDrum > 0)

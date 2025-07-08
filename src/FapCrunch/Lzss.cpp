@@ -131,7 +131,6 @@ int Lzss::Crunch(bool loopStart)
 {
 	int pos = 0;
 	int literalLen = 0;
-	int crunchLen = 0;
 	int minDecrunchRatio = 2;
 	int prevLen1, prevLen2;
 	int matchDistance, matchLen;

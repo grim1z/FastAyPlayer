@@ -40,6 +40,8 @@ private:
 	int			nbFrame;
 	int			loopFrame;
 	int			attrib;
+	int clock;
+	int playRate;
 	uint8_t* pDataStream;
 	char* pSongName;
 	char* pSongAuthor;
