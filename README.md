@@ -89,8 +89,8 @@ Here we are, you can now call the player, one time par frame.
 
 For psychopathic optimization reasons, the replay routine will abuse the stack-pointer. Therefore, **it must be jumped into** and not called (ie. `JP FapPlay` instead of the usual  `CALL FapPlay`). It also **must not be interrupted**.
 When its done, it will **jump back to your program** at the return address given to the player initialization-routine. **And it's up to you to save and restore the stack-pointer** (`SP`).
-  * Registers modified by the player: **`AF, BC, DE, HL, BC', IYl`** (+ HL' if loop).
-  * Not modified: **`AF', DE', IX, IYh`** (+ HL' is no loop).
+  * Registers modified by the player: **`AF, BC, DE, HL, BC', IYl`** (+ **`HL'`** if loop).
+  * Not modified: **`AF', DE', IX, IYh`** (+ **`HL'`** if no loop).
 
 Full example
 ------------
