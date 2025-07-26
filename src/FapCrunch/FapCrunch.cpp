@@ -9,6 +9,31 @@
 uint8_t regOrder[] = { 0, 2, 1, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
 #define NR_FAP_REGISTERS sizeof(regOrder)
 
+int outBufferSize = 0;
+int outPlayTimeInNops = 0;
+int outRegisterCountToPlay = 0;
+bool outIsR12Constant = false;
+
+int getBufferSize()
+{
+    return outBufferSize;
+}
+
+int getPlayTimeInNops()
+{
+    return outPlayTimeInNops;
+}
+
+int getRegisterCountToPlay()
+{
+    return outRegisterCountToPlay;
+}
+
+bool isR12Constant()
+{
+    return outIsR12Constant;
+}
+
 void CrunchSong(YmData& ymData,
 	uint8_t* crunchData[NR_FAP_REGISTERS],
 	int crunchSize[NR_FAP_REGISTERS],
@@ -183,8 +208,15 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
+	// Initializes the out values.
+	outBufferSize = 0;
+	outPlayTimeInNops = 0;
+	outRegisterCountToPlay = 0;
+	outIsR12Constant = false;
+	
 	ymData.Optimize();
 	uint8_t nrRegistersToPlay = ymData.CountAndLimitRegChanges(threshold);
+	outRegisterCountToPlay = nrRegistersToPlay;
 
 	uint8_t* crunchData[NR_FAP_REGISTERS] = { 0 };
 	int crunchSize[NR_FAP_REGISTERS] = { 0 };
@@ -192,9 +224,11 @@ int main(int argc, char* argv[])
 
 	CrunchSong(ymData, crunchData, crunchSize, loopOffset);
 
+	outIsR12Constant = ymData.R12IsConst();
+
 	printf("\nSummary:\n");
 	printf("  - Max registers to program: %d\n", nrRegistersToPlay);
-	printf("  - Constant Register 12: %s\n", ymData.R12IsConst() ? "YES" : "NO... Damn your musician!");
+	printf("  - Constant Register 12: %s\n", outIsR12Constant ? "YES" : "NO... Damn your musician!");
 
 	bool success = WriteFile(dstFile, ymData, crunchData, crunchSize, loopOffset, nrRegistersToPlay);
 	if (!success)
@@ -204,17 +238,20 @@ int main(int argc, char* argv[])
 	}
 
 	uint16_t decrunchBufferSize = (256 + 6) * (NR_FAP_REGISTERS - (ymData.R12IsConst() ? 1 : 0));
-	if (ymData.R12IsConst())
+	if (outIsR12Constant)
 	{
 		int exeTime[] = { 596, 620, 644, 668 };
-		printf("  - Play time: %d NOPS\n", exeTime[nrRegistersToPlay - 11]);
+		outPlayTimeInNops = exeTime[nrRegistersToPlay - 11];
 	}
 	else
 	{
 		int exeTime[] = { 664, 688, 712, 736 };
-		printf("  - Play time: %d NOPS\n", exeTime[nrRegistersToPlay - 11]);
+		outPlayTimeInNops = exeTime[nrRegistersToPlay - 11];
 	}
+	printf("  - Play time: %d NOPS\n", outPlayTimeInNops);
 	printf("  - Decrunch buffer size: %d (#%X)\n", decrunchBufferSize, decrunchBufferSize);
+
+	outBufferSize = decrunchBufferSize;
 
 	return 0;
 }
